@@ -1,0 +1,56 @@
+version = 1
+tileset
+{
+    file = pzsorter_crate_01
+    image = pzsorter_crate_01.png
+    size = 8,8
+    id = 1
+    // pzsorter_crate_01_0  (column 0, row 0)
+    tile
+    {
+        xy = 0,0
+        BlocksPlacement =
+        CanBreak =
+        ContainerCapacity = 50
+        CustomName = Sorter Crate
+        Facing = E
+        container = crate
+        solid =
+    }
+    // pzsorter_crate_01_1  (column 1, row 0)
+    tile
+    {
+        xy = 1,0
+        BlocksPlacement =
+        CanBreak =
+        ContainerCapacity = 50
+        CustomName = Sorter Crate
+        Facing = S
+        container = crate
+        solid =
+    }
+    // pzsorter_crate_01_2  (column 2, row 0)
+    tile
+    {
+        xy = 2,0
+        BlocksPlacement =
+        CanBreak =
+        ContainerCapacity = 50
+        CustomName = Sorter Crate
+        Facing = W
+        container = crate
+        solid =
+    }
+    // pzsorter_crate_01_3  (column 3, row 0)
+    tile
+    {
+        xy = 3,0
+        BlocksPlacement =
+        CanBreak =
+        ContainerCapacity = 50
+        CustomName = Sorter Crate
+        Facing = N
+        container = crate
+        solid =
+    }
+}

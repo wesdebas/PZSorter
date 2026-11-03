@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  lua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.1, busted, and Pillow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 liblua5.1-dev luarocks python3-pil
+          sudo luarocks --lua-version=5.1 install busted
+
+      - name: Syntax-check every Lua file
+        run: find Contents -name '*.lua' -print0 | xargs -0 -n1 luac5.1 -p
+
+      - name: Unit tests
+        run: busted --helper=tests/helper.lua tests
+
+      - name: Tile pack check
+        run: python3 tools/check_tiles.py

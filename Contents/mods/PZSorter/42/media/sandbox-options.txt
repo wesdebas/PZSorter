@@ -1,0 +1,11 @@
+VERSION = 1,
+
+option PZSorter.SorterRange
+{
+    type = integer,
+    min = 20,
+    max = 30,
+    default = 20,
+    page = PZSorter,
+    translation = PZSorter_SorterRange,
+}

@@ -1,0 +1,11 @@
+{
+    "IGUI_PZSorter_NameTitle": "Name this sorter",
+    "IGUI_PZSorter_NameHint": "1 to 24 characters. Spaces at the ends are ignored.",
+    "IGUI_PZSorter_NameEmpty": "The name can't be empty.",
+    "IGUI_PZSorter_NameLong": "The name can't be longer than 24 characters.",
+    "IGUI_PZSorter_NameOk": "OK",
+    "IGUI_PZSorter_NameKeep": "Use default",
+    "IGUI_PZSorter_Dismantle": "Dismantle",
+    "IGUI_PZSorter_DismantleNeedTools": "Needs a hammer and a saw.",
+    "IGUI_PZSorter_DefaultObjectName": "Sorter Crate"
+}

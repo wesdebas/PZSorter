@@ -1,0 +1,61 @@
+module PZSorter
+{
+    entity SorterCrate
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_PZSorter_SorterCrate,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            face E
+            {
+                layer
+                {
+                    row = pzsorter_crate_01_0,
+                }
+            }
+            face S
+            {
+                layer
+                {
+                    row = pzsorter_crate_01_1,
+                }
+            }
+            face W
+            {
+                layer
+                {
+                    row = pzsorter_crate_01_2,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = pzsorter_crate_01_3,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWoodenStructureMedium,
+            time = 50,
+            SkillRequired = Woodwork:1,
+            xpAward = Woodwork:15,
+            category = Furniture,
+            Tags = Carpentry;Furniture,
+            Tooltip = Tooltip_PZSorter_SorterCrate,
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 tags[base:screwdriver] mode:keep flags[Prop2;MayDegradeVeryLight],
+                item 4 [Base.Plank],
+                item 10 [Base.Screws],
+                item 1 [Base.SmallSheetMetal],
+            }
+        }
+    }
+}

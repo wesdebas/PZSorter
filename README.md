@@ -5,7 +5,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 ![Sorter Crate concept art](docs/images/sorter-crate-concept.jpg)
 *Concept art for the Sorter Crate.*
 
-> Status: in design. Not playable yet.
+> Status: step 1 (this branch) can build, name, and dismantle the Sorter Crate. Sorting is not in yet.
 
 ## How it works
 
@@ -38,6 +38,33 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 - Search, Allow All, and Clear All in the filter tree.
 - Linked containers glow while the Sorter panel is open.
 - Multiplayer support that respects safehouse permissions.
+
+## Install and test
+
+Project Zomboid Build 42.21. The full click-by-click list is [docs/TESTING.md](docs/TESTING.md).
+
+One-time setup, in a Windows Command Prompt:
+
+```
+cd C:\AI\Projects
+git clone https://github.com/wesdebas/PZSorter.git
+mklink /J "%USERPROFILE%\Zomboid\Workshop\PZSorter" "C:\AI\Projects\PZSorter"
+```
+
+That links the repo into the game's Workshop folder. Do not also subscribe to PZSorter on Steam, and do not keep a second copy under `Zomboid\mods`.
+
+For this branch:
+
+```
+cd /d C:\AI\Projects\PZSorter
+git fetch
+git checkout feature/crate-and-naming
+git pull
+```
+
+Enable **PZSorter** in the Mods menu, start a Sandbox game, and use the checklist in [docs/TESTING.md](docs/TESTING.md). The crate art says TEMP. It is a placeholder.
+
+The Lua tests run on GitHub for every pull request. You do not need to run them. From a machine with Lua 5.1 and busted they are `busted --helper=tests/helper.lua tests`.
 
 ## License
 

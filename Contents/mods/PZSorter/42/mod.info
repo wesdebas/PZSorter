@@ -1,0 +1,11 @@
+name=PZSorter
+id=PZSorter_wd
+author=wesdebas
+description=One crate to sort them all. Drop loot in, press Sort.
+poster=poster.png
+icon=icon.png
+modversion=0.1.0
+versionMin=42.0
+url=https://github.com/wesdebas/PZSorter
+pack=pzsorter_crate
+tiledef=pzsorter_crate 7311
