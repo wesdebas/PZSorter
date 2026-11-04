@@ -1,8 +1,6 @@
 # Sorter Crate sprite spec
 
-For the designer making the real crate tile. The picture in `docs/images/sorter-crate-concept.jpg` is the look: a wooden crate, a metal sheet screwed on as a drop slot, a yellow stripe, a branching-arrow mark, and a hanging name tag.
-
-What is in the game today is a placeholder. Each facing says TEMP in a red box, and the lid is stamped E, S, W, or N. Replace the files listed at the bottom. Do not rename them.
+The final crate art is in. It is a wooden crate, a metal sheet screwed on as a drop slot, a yellow stripe, a branching-arrow mark, and a hanging name tag. `docs/images/sorter-crate-concept.jpg` is that look. Do not rename the files listed at the bottom.
 
 Researched against Build **42.21**, the current stable build. Sources are cited. Where a Build 42 source and an older guide disagree, that is called out.
 
@@ -26,7 +24,7 @@ Sources:
 - [libpzmap glossary](https://docs.rs/libpzmap/latest/libpzmap/glossary/index.html) and its [version table](https://docs.rs/libpzmap/latest/src/libpzmap/build/versions.rs.html). Build 42 cells are 256 squares and blocks are 8×8. Build 41 cells are 300 and blocks are 10×10. That write-up is about map geometry, not sprite pixels.
 - The Indie Stone staff, [forum thread on the double-sized textures setting](https://theindiestone.com/forums/topic/70291-double-sized-textures-setting-break-some-custom-tiles-mod/). If a mod ships no 1× art, turning **Double sized textures** off makes custom tiles blow up, vanish, or overlap. Only the mod author can add the 1× set.
 
-The floor diamond sits in the **bottom** 128×64 of the 128×256 cell. One storey of wall above that diamond is the other 192 pixels. A crate is much shorter than a storey: keep it sitting on the diamond, not floating in the empty space at the top of the cell. The placeholder uses this diamond:
+The floor diamond sits in the **bottom** 128×64 of the 128×256 cell. One storey of wall above that diamond is the other 192 pixels. A crate is much shorter than a storey: keep it sitting on the diamond, not floating in the empty space at the top of the cell. The final art uses this diamond:
 
 - North corner of the floor: (64, 192)
 - East corner: (128, 224)
@@ -48,15 +46,15 @@ A crate the player can rotate needs **four** cells, one per facing. The letters 
 
 Numbering starts at 0 in the top-left cell and walks right, then down. That is the rule on [Adding new tiles](https://pzwiki.net/wiki/Adding_new_tiles) (`lighting_outdoor_01_0` is the first cell).
 
-Why this order, and what is not fully pinned down:
+The facing order is confirmed in game: cell 0 is East, cell 1 is South, cell 2 is West, and cell 3 is North. Do not rename the files or swap the cells.
+
+That order matches the sources used while the sheet was still a placeholder:
 
 - The public [pztool](https://github.com/guspuffygit/project-zomboid-tile-cli) example puts `Facing = E` on cell `xy = 0,0`, which is index 0.
 - Vanilla's branch stool uses the next index for the next facing: `crafted_04_112` is Facing E and `crafted_04_113` is Facing S ([PZwiki: Branch Stool](https://pzwiki.net/wiki/Branch_Stool)).
 - West then North continue that same clockwise step (E, S, W, N). A multi-tile wardrobe on the wiki groups its cells as east, then west, then north, but those are two-cell-wide pieces, not four rotations of one crate, so they were not copied as the order.
 
 Vanilla's own built wooden crate only defines `face S` (one sprite, `carpentry_01_19`). It does not rotate. We still ship four faces because the build menu rotates an entity that defines more than one `face` block. The bed example on the Indie Stone forums shows the shape: a `face S` block and a `face E` block, each with a `row` of sprite names ([how to add new constructions](https://theindiestone.com/forums/topic/87969-42123-how-to-add-new-constructions/)).
-
-**Check in game:** while placing, the letter stamped on the placeholder lid (E/S/W/N) should match the facing the build menu is highlighting. If the menu's "east" shows our "south" cell, the art cells are in the wrong order. Swap pixels between cells, or tell the programmer which index should be which letter. Do not rename the files.
 
 Each facing should show the name tag and the arrow on the side that faces that direction. The camera always sees the south-west and south-east sides of a box, so the north and west facings will show the tag climbing the far edge rather than a side the camera cannot see.
 
@@ -126,16 +124,16 @@ Build 42's per-pixel depth is a PNG, not the old `tileGeometry.txt` boxes. HydeC
 - It loads that folder only when `common/media/tileGeometry.txt` exists.
 - A sprite with no depth cell falls back to `DEPTH_whole_tile.png`, the whole-square cube, and draws over anyone standing on its own square.
 
-The placeholder does **not** ship a depth map, so it uses that cube. That is acceptable for a TEMP crate and wrong for the real one. The real sheet should add:
+The final art does **not** ship a depth map, so it still uses that cube. A later change can add:
 
 - `Contents/mods/PZSorter/common/media/tileGeometry.txt` (it can be almost empty; it is the switch that turns depth maps on)
 - `Contents/mods/PZSorter/common/media/depthmaps/DEPTH_pzsorter_crate_01.png`
 
 Do not borrow another sprite's depth cell unless the silhouette matches. A borrowed cell clips where the paintings differ (HydeCo).
 
-## What to replace
+## Files
 
-Draw into the same pixels, then rebuild the pack. From the repo root:
+The paths below are the final art. To change the painting later, draw into the same pixels, then rebuild the pack. From the repo root:
 
 ```
 python3 tools/build_tiles.py
@@ -151,7 +149,7 @@ python3 tools/build_tiles.py --from-faces
 
 That pastes the faces back into the sheet (cell 0 at the top left, then 1, 2, 3) and packs it.
 
-`--placeholders` redraws the TEMP art. Do not run that once the real art is in.
+`--placeholders` redraws the old TEMP art. Do not run it. The final art is already in.
 
 ### Paths
 
@@ -163,10 +161,12 @@ That pastes the faces back into the sheet (cell 0 at the top left, then 1, 2, 3)
 - `Contents/mods/PZSorter/common/media/textures/pzsorter/2x/faces/pzsorter_crate_01_2.png` — West
 - `Contents/mods/PZSorter/common/media/textures/pzsorter/2x/faces/pzsorter_crate_01_3.png` — North
 
-1× (half of the above, nearest-neighbour):
+1× (the half-size files from the final art):
 
 - `Contents/mods/PZSorter/common/media/textures/pzsorter/1x/pzsorter_crate_01.png` — 512×1024
 - `Contents/mods/PZSorter/common/media/textures/pzsorter/1x/faces/pzsorter_crate_01_0.png` through `_3.png` — 64×128
+
+Those 1× PNGs are the files from the art drop. They are a filtered scale of the 2× sheet, not a nearest-neighbour rebuild. The `.pack` is still built from the 2× sheet.
 
 Game files the script rewrites (do not hand-edit):
 
@@ -178,7 +178,6 @@ Game files the script rewrites (do not hand-edit):
 
 ## Uncertainties to confirm on 42.21
 
-- The E, S, W, N cell order is right for index 0 and 1 (east, then south) from the sources above. West and north follow that sequence and still need the in-game rotation check.
-- Whether 42.21 still requires a separate 1× pack when Double sized textures is off. The 1× PNGs are ready. The shipped `.pack` is 2× only, which matches the default setting.
-- The placeholder has no depth map, so it uses the whole-tile cube. The real art should add one.
+- Whether 42.21 still requires a separate 1× pack when Double sized textures is off. The 1× PNGs are in the repo. The shipped `.pack` is 2× only, which matches the default setting.
+- The final art has no depth map, so it uses the whole-tile cube.
 - `tiledef` 7311 must not already be taken by another enabled mod. The community list is [Tiledefs used by mods](https://pzwiki.net/wiki/Tiledefs_used_by_mods). A collision is a one-line change in `mod.info`.

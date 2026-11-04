@@ -1,11 +1,11 @@
-"""Build the Sorter Crate placeholder art and the files the game actually loads.
+"""Build the Sorter Crate tiles and the files the game actually loads.
 
 Run from the repo root:
 
     python3 tools/build_tiles.py --placeholders
 
-That redraws the temporary crate, writes the 2x and 1x sheets, and packs
-them. The real art replaces the same files later. See docs/art/SPRITE-SPEC.md.
+That redraws the old temporary crate. Do not use it. The final art is already
+in the 2x sheet. See docs/art/SPRITE-SPEC.md.
 
     python3 tools/build_tiles.py
         Pack whatever is already in the 2x sheet. Use this after dropping in
@@ -53,9 +53,9 @@ TILESET_NAME = "pzsorter_crate_01"
 # Inside the .tiles file this must be 1..512. It is NOT the mod.info number.
 TILESET_INDEX = 1
 
-# Order is the build-menu rotation order we tell the entity script to use.
-# East, then South, then West, then North. See SPRITE-SPEC for the sources
-# and the part that is still an assumption.
+# Order is the build-menu rotation order the entity script uses.
+# East, then South, then West, then North. Confirmed in game.
+# See SPRITE-SPEC.
 FACING_ORDER = ("E", "S", "W", "N")
 
 CAPACITY = "50"
