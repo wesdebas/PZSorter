@@ -28,6 +28,22 @@ local function copyValue(value)
     return out
 end
 
+-- 42.21 InventoryItem:setCustomName takes the name and nothing else.
+-- item:setCustomName(true, name) is "expected 1 argument, got 2". Debug
+-- mode shows that Java error even when the call sits inside pcall, so the
+-- call itself has to be the one-argument form. setName is the same shape.
+function Carry.nameItem(item, name)
+    if not item or type(name) ~= "string" then
+        return
+    end
+    if item.setName then
+        item:setName(name)
+    end
+    if item.setCustomName then
+        item:setCustomName(name)
+    end
+end
+
 local function copyLink(link)
     return {
         x = link.x,

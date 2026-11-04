@@ -10,6 +10,7 @@ PZSorter.CarryFind = PZSorter.CarryFind or {}
 local Find = PZSorter.CarryFind
 
 require "PZSorter/Config"
+require "PZSorter/Carry"
 
 local Config = PZSorter.Config
 local FULL_TYPE = "PZSorter.SorterCrate"
@@ -124,20 +125,9 @@ function Find.write(item, packed)
     if not item or not item.getModData or type(packed) ~= "table" then
         return
     end
-    pcall(function()
-        item:getModData()[Config.MOD_DATA_KEY] = packed
-    end)
+    item:getModData()[Config.MOD_DATA_KEY] = packed
     if packed.name then
-        if item.setName then
-            pcall(function()
-                item:setName(packed.name)
-            end)
-        end
-        if item.setCustomName then
-            pcall(function()
-                item:setCustomName(true, packed.name)
-            end)
-        end
+        PZSorter.Carry.nameItem(item, packed.name)
     end
     if item.transmitModData then
         pcall(function()

@@ -28,6 +28,22 @@ local function record()
 end
 
 describe("picked up sorter crate", function()
+    it("names the carried item with one argument, the 42.21 shape", function()
+        local function oneArgument(label)
+            return function(self, ...)
+                assert.are.equal(1, select("#", ...), label .. " expected 1 argument, got " .. tostring(select("#", ...)))
+                assert.are.equal("Home", (...))
+            end
+        end
+        local item = {
+            setName = oneArgument("setName"),
+            setCustomName = oneArgument("setCustomName"),
+        }
+        Carry.nameItem(item, "Home")
+        Carry.nameItem(item, nil)
+        Carry.nameItem(nil, "Home")
+    end)
+
     it("refuses pickup when the crate still holds items", function()
         assert.is_true(Carry.canPickUp(0))
         assert.is_false(Carry.canPickUp(1))

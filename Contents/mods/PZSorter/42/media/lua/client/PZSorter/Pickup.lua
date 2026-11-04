@@ -199,25 +199,102 @@ local function applyPlace(square, packed)
     local object = sorterOnSquare(square)
     if not object then
         print("PZSorter: place found no crate on the square")
-        return
+        return false
     end
-    local existing = recordOf(object)
-    if existing and tostring(existing.id) == tostring(packed.id) then
-        return
-    end
+    -- Vanilla often copies the item mod data onto the new crate, which is
+    -- why the name and rows showed up with no log line. That copy has no
+    -- tile position and leaves the world row marked carried. Write the
+    -- record again from the square the player actually used.
     local record = Carry.restore(packed, square:getX(), square:getY(), square:getZ())
     object:getModData()[Config.MOD_DATA_KEY] = record
     if PZSorter.SorterData and PZSorter.SorterData.getWorld then
         local world = PZSorter.SorterData.getWorld()
+        world.sorters = world.sorters or {}
         PZSorter.Names.absorb(world.sorters, record)
     end
     if PZSorter.SorterData and PZSorter.SorterData.applyContainerName then
         PZSorter.SorterData.applyContainerName(object)
     end
     if object.transmitModData then
-        pcall(function()
-            object:transmitModData()
+        object:transmitModData()
+    end
+    return true
+end
+
+-- Pickup calls pickUpMoveable from pickUpMoveableViaCursor. Place does not
+-- do the same with placeMoveable: the action calls placeMoveableViaCursor
+-- on its own, so wrapping only placeMoveable never ran and never logged.
+-- Every place entry, plus the action's complete(), shares one depth so a
+-- nested call logs the restore once.
+local placeDepth = 0
+
+local function packedFrom(item)
+    if not item or not item.getModData then
+        return nil
+    end
+    local ok, modData = pcall(function()
+        return item:getModData()
+    end)
+    if not ok or type(modData) ~= "table" then
+        return nil
+    end
+    local saved = modData[Config.MOD_DATA_KEY]
+    if type(saved) ~= "table" or saved.id == nil then
+        return nil
+    end
+    return saved
+end
+
+local function handItem(player)
+    if not player then
+        return nil
+    end
+    if player.getPrimaryHandItem then
+        local ok, hand = pcall(function()
+            return player:getPrimaryHandItem()
         end)
+        if ok and packedFrom(hand) then
+            return hand
+        end
+    end
+    if player.getSecondaryHandItem then
+        local ok, hand = pcall(function()
+            return player:getSecondaryHandItem()
+        end)
+        if ok and packedFrom(hand) then
+            return hand
+        end
+    end
+    return nil
+end
+
+local function beginPlace(packed)
+    placeDepth = placeDepth + 1
+    local outer = placeDepth == 1
+    -- The outer call is ISMoveablesAction:complete. It often does not have
+    -- the item in its arguments; the cursor method it calls does. Arm the
+    -- saved record on whichever of them sees it first.
+    if packed and not Carry.pending then
+        Carry.pending = Carry.pack(packed)
+        print("PZSorter: place starting name=" .. tostring(packed.name))
+    end
+    return outer
+end
+
+local function endPlace(square, outer)
+    if outer and Carry.pending then
+        local restored = Carry.pending
+        local count = restored.links and #restored.links or 0
+        if square then
+            applyPlace(square, restored)
+            print("PZSorter: place restored name=" .. tostring(restored.name) .. " links=" .. tostring(count))
+        else
+            print("PZSorter: place had no square, saved record was not applied")
+        end
+        Carry.pending = nil
+    end
+    if placeDepth > 0 then
+        placeDepth = placeDepth - 1
     end
 end
 
@@ -258,56 +335,19 @@ end
 
 local function wrapPlace(methodName)
     local old = ISMoveableSpriteProps[methodName]
-    if type(old) ~= "function" then
+    if type(old) ~= "function" or ISMoveableSpriteProps["_PZSorter" .. methodName] then
         return false
     end
+    ISMoveableSpriteProps["_PZSorter" .. methodName] = true
     ISMoveableSpriteProps[methodName] = function(self, ...)
         local _, player, square, item = describeArgs(...)
-        if not item and player and player.getPrimaryHandItem then
-            local ok, hand = pcall(function()
-                return player:getPrimaryHandItem()
-            end)
-            if ok and hand and hand.getFullType and hand:getFullType() == "PZSorter.SorterCrate" then
-                item = hand
-            end
+        if not packedFrom(item) then
+            item = handItem(player)
         end
-        if not item and player and player.getSecondaryHandItem then
-            local ok, hand = pcall(function()
-                return player:getSecondaryHandItem()
-            end)
-            if ok and hand and hand.getFullType and hand:getFullType() == "PZSorter.SorterCrate" then
-                item = hand
-            end
-        end
-        local packed = nil
-        if item and item.getModData then
-            local ok, modData = pcall(function()
-                return item:getModData()
-            end)
-            if ok and type(modData) == "table" then
-                local saved = modData[Config.MOD_DATA_KEY]
-                if type(saved) == "table" and saved.id ~= nil then
-                    packed = saved
-                end
-            end
-        end
-        if packed then
-            -- initNew consumes this if the object is added during place.
-            Carry.pending = Carry.pack(packed)
-            print("PZSorter: place starting name=" .. tostring(packed.name))
-        end
+        local packed = packedFrom(item)
+        local outer = beginPlace(packed)
         local result = old(self, ...)
-        if Carry.pending then
-            local restored = Carry.pending
-            if square then
-                applyPlace(square, restored)
-                local count = restored.links and #restored.links or 0
-                print("PZSorter: place restored name=" .. tostring(restored.name) .. " links=" .. tostring(count))
-            else
-                print("PZSorter: place had no square, saved record was not applied")
-            end
-            Carry.pending = nil
-        end
+        endPlace(square, outer)
         return result
     end
     return true
@@ -328,17 +368,48 @@ local function install()
     elseif type(ISMoveableSpriteProps.pickUpMoveableViaCursor) == "function" then
         pickupName = "pickUpMoveableViaCursor"
     end
-    local placeName = nil
-    if type(ISMoveableSpriteProps.placeMoveable) == "function" then
-        placeName = "placeMoveable"
-    elseif type(ISMoveableSpriteProps.placeMoveableInternal) == "function" then
-        placeName = "placeMoveableInternal"
-    elseif type(ISMoveableSpriteProps.placeMoveableViaCursor) == "function" then
-        placeName = "placeMoveableViaCursor"
-    end
     local pickupWrapped = pickupName and wrapPickup(pickupName)
-    local placeWrapped = placeName and wrapPlace(placeName)
-    print("PZSorter: pickup hook installed pickup=" .. tostring(pickupName) .. " place=" .. tostring(placeName) .. " wrapped=" .. tostring(pickupWrapped and placeWrapped))
+    local placeNames = {}
+    local placeWrapped = false
+    for _, methodName in ipairs({ "placeMoveableViaCursor", "placeMoveable", "placeMoveableInternal" }) do
+        if wrapPlace(methodName) then
+            placeNames[#placeNames + 1] = methodName
+            placeWrapped = true
+        end
+    end
+    print("PZSorter: pickup hook installed pickup=" .. tostring(pickupName) .. " place=" .. table.concat(placeNames, ",") .. " wrapped=" .. tostring(pickupWrapped and placeWrapped))
+
+    if ISMoveablesAction and type(ISMoveablesAction.complete) == "function" and not ISMoveablesAction._PZSorterPlace then
+        ISMoveablesAction._PZSorterPlace = true
+        local oldComplete = ISMoveablesAction.complete
+        function ISMoveablesAction:complete()
+            local mode = tostring(self.mode or "")
+            local placing = mode == "place" or mode == "placeface"
+            local square = self.square
+            local packed = nil
+            if placing then
+                packed = packedFrom(self.item) or packedFrom(handItem(self.character))
+                if not packed then
+                    print("PZSorter: place complete mode=" .. mode .. " with no sorter item")
+                end
+            elseif mode ~= "pickup" and mode ~= "scrap" and mode ~= "repair" and mode ~= "rotate" then
+                packed = packedFrom(self.item) or packedFrom(handItem(self.character))
+                if packed then
+                    print("PZSorter: move action mode=" .. mode)
+                    placing = true
+                end
+            end
+            local outer = false
+            if placing then
+                outer = beginPlace(packed)
+            end
+            local result = oldComplete(self)
+            if placing then
+                endPlace(square, outer)
+            end
+            return result
+        end
+    end
 
     if ISMoveablesAction and type(ISMoveablesAction.isValid) == "function" and not ISMoveablesAction._PZSorterPickup then
         ISMoveablesAction._PZSorterPickup = true
