@@ -26,3 +26,4 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 - Sandbox option **Sorter range**, from 20 to 30 tiles, default 20. The area is a square counted from the crate, on the crate's floor and one floor above and below.
 - Dismantle on the crate's right-click menu. You need a hammer and a saw. Some of the planks and screws come back, the way vanilla furniture does, and the Small Metal Sheet always comes back. Items that were inside drop on the ground.
 - The final crate art is in. Cells 0 to 3 face East, South, West, and North. Facings 2 (W) and 3 (N) show the crate's back on purpose.
+- The crate art was redrawn at the game's isometric angle.
