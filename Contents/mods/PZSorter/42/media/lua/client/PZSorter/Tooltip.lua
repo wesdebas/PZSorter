@@ -50,30 +50,52 @@ end
 
 function Tooltip.titleFor(object)
     local record = recordOf(object)
-    return PZSorter.Names.containerTitle(record and record.name)
+    local container = object and object.getContainer and object:getContainer()
+    local custom = container and container.getCustomName and container:getCustomName()
+    local title, adopt = PZSorter.Names.reconcile(record and record.name, custom)
+    if adopt then
+        print("PZSorter: keeping vanilla name " .. tostring(title))
+        if record then
+            record.name = title
+            record.nameConfirmed = true
+        end
+        if Config.onAuthority() and PZSorter.SorterData and PZSorter.SorterData.setName and object.getSquare then
+            local square = object:getSquare()
+            if square then
+                PZSorter.SorterData.setName(getSpecificPlayer(0), {
+                    id = record and record.id or nil,
+                    x = square:getX(),
+                    y = square:getY(),
+                    z = square:getZ(),
+                    name = title,
+                })
+            end
+        end
+    end
+    return title
 end
 
 function Tooltip.applyName(object)
     if not object then
         return
     end
+    local container = object.getContainer and object:getContainer()
+    local current = container and container.getCustomName and container:getCustomName()
     local title = Tooltip.titleFor(object)
-    -- setName is not on every build. The loot window reads
-    -- container:getCustomName() while it builds the container button
-    -- (ISInventoryPage, the world-object loop). Without that, a container
-    -- whose type is "crate" is titled "Crate".
+    -- Don't write the name back when it is already what the loot window shows.
+    -- That was wiping a vanilla rename on the next open.
+    if current == title then
+        return
+    end
     if object.setName then
         pcall(function()
             object:setName(title)
         end)
     end
-    if object.getContainer then
-        local container = object:getContainer()
-        if container and container.setCustomName then
-            pcall(function()
-                container:setCustomName(title)
-            end)
-        end
+    if container and container.setCustomName then
+        pcall(function()
+            container:setCustomName(title)
+        end)
     end
 end
 
@@ -86,13 +108,14 @@ local function retitleOpenWindows(page)
         local container = button and button.inventory
         local parent = container and container.getParent and container:getParent()
         if parent and Config.isSorterSpriteName(spriteNameOf(parent)) then
+            local current = container.getCustomName and container:getCustomName()
             local title = Tooltip.titleFor(parent)
             button.name = title
             button.tooltip = title
             if button.setTitle then
                 button:setTitle(title)
             end
-            if container.setCustomName then
+            if current ~= title and container.setCustomName then
                 pcall(function()
                     container:setCustomName(title)
                 end)

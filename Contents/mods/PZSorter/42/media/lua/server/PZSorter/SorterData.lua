@@ -242,7 +242,8 @@ local function playerSquareDistance(player, object)
     return math.max(dx, dy)
 end
 
-local function commandSetName(player, args)
+function Data.setName(player, args)
+    print("PZSorter: setName entered")
     if type(args) ~= "table" then
         return
     end
@@ -322,22 +323,39 @@ end
 -- SpriteConfig.OnCreate. Runs when the build menu finishes the crate,
 -- including when Build cheat skips the material check.
 function Data.onBuilt(object, character)
-    if isServer and not isServer() then
+    print("PZSorter: onBuilt entered authority=" .. tostring(Config.onAuthority()))
+    if not Config.onAuthority() then
+        print("PZSorter: onBuilt skipped, this side does not save")
         return
     end
     Data.onObjectAdded(object)
     Data.applyContainerName(object)
     local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
-    if not character or not sendServerCommand or type(record) ~= "table" then
+    if type(record) == "table" then
+        print("PZSorter: name assigned " .. tostring(record.name) .. " id=" .. tostring(record.id))
+    else
+        print("PZSorter: onBuilt stored no record")
         return
     end
     if record.nameConfirmed then
+        print("PZSorter: name already confirmed, no prompt")
+        return
+    end
+    -- Single player has no client/server split. Open the box in this state.
+    if Config.onPlayer() and PZSorter.NamePrompt and PZSorter.NamePrompt.onBuilt then
+        print("PZSorter: opening name box directly")
+        PZSorter.NamePrompt.onBuilt(object, character)
+    end
+    if not character or not sendServerCommand then
+        print("PZSorter: no character or sendServerCommand, direct open only")
         return
     end
     local square = object.getSquare and object:getSquare()
     if not square then
+        print("PZSorter: onBuilt object has no square")
         return
     end
+    print("PZSorter: command sent OpenName")
     sendServerCommand(character, Config.COMMAND_MODULE, "OpenName", {
         id = record.id,
         name = record.name,
@@ -436,32 +454,29 @@ local function removeObject(object)
     end
 end
 
-local function commandDismantle(player, args)
-    if type(args) ~= "table" then
-        return
-    end
-    local object = findOnSquare(args.x, args.y, args.z, args.id)
+function Data.dismantleObject(player, object)
+    print("PZSorter: dismantle running")
     if not object then
-        return
+        print("PZSorter: dismantle has no crate")
+        return false
     end
-    -- The timed action walks the player up to the crate. A command from
-    -- across the map is ignored. 2 tiles covers "standing on the next
-    -- square" plus one square of lag, and no more.
     local distance = playerSquareDistance(player, object)
+    print("PZSorter: dismantle distance=" .. tostring(distance))
     if distance == nil or distance > 2 then
-        return
+        print("PZSorter: dismantle stopped, player is not next to the crate")
+        return false
     end
-    if not PZSorter.Dismantle.hasRequiredTools(tagsInInventory(player)) then
+    local tags = tagsInInventory(player)
+    print("PZSorter: dismantle tools=" .. table.concat(tags, ","))
+    if not PZSorter.Dismantle.hasRequiredTools(tags) then
+        print("PZSorter: dismantle stopped, need a hammer and a saw")
         if player and player.setHaloNote then
             player:setHaloNote(getText("IGUI_PZSorter_DismantleNeedTools"))
         end
-        return
+        return false
     end
     local result = PZSorter.Dismantle.returns(carpentryLevel(player), gameRoll)
     local square = object:getSquare()
-    -- Contents hit the floor first, while the square and the container
-    -- still exist. That is the vanilla container behaviour: the items are
-    -- not deleted with the furniture.
     local spilled, spillError = pcall(function()
         spillContents(object, square)
     end)
@@ -472,20 +487,35 @@ local function commandDismantle(player, args)
     give(player, items.plank, result.planks)
     give(player, items.screws, result.screws)
     give(player, items.smallMetalSheet, result.smallMetalSheets)
+    print("PZSorter: gave materials planks=" .. tostring(result.planks) .. " screws=" .. tostring(result.screws) .. " sheet=" .. tostring(result.smallMetalSheets))
     local record = object:getModData()[Config.MOD_DATA_KEY]
+    print("PZSorter: removing crate")
     removeObject(object)
     if record and record.id ~= nil then
         local world = worldTable()
-        -- A nil entry is not always dropped by the save, so the slot stays
-        -- and is marked gone. nextFromRecords ignores it because it has no
-        -- name, which frees "Sorter N" without reusing the unique id.
         world.sorters[tostring(record.id)] = { gone = true, id = tostring(record.id) }
         syncWorld()
     end
+    print("PZSorter: dismantle finished")
+    return true
+end
+
+local function commandDismantle(player, args)
+    print("PZSorter: dismantle command")
+    if type(args) ~= "table" then
+        print("PZSorter: dismantle command had no arguments")
+        return
+    end
+    local object = findOnSquare(args.x, args.y, args.z, args.id)
+    if not object then
+        print("PZSorter: dismantle command found no crate at " .. tostring(args.x) .. "," .. tostring(args.y) .. "," .. tostring(args.z))
+        return
+    end
+    Data.dismantleObject(player, object)
 end
 
 local COMMANDS = {
-    SetName = commandSetName,
+    SetName = Data.setName,
     Dismantle = commandDismantle,
 }
 
@@ -493,18 +523,21 @@ local function onClientCommand(module, command, player, args)
     if module ~= Config.COMMAND_MODULE then
         return
     end
-    -- In single player isServer() is still true, so this runs there too.
-    if isServer and not isServer() then
+    print("PZSorter: OnClientCommand " .. tostring(command) .. " authority=" .. tostring(Config.onAuthority()))
+    if not Config.onAuthority() then
+        print("PZSorter: OnClientCommand skipped, this side does not save")
         return
     end
     local handler = COMMANDS[command]
     if handler then
         handler(player, args)
+    else
+        print("PZSorter: OnClientCommand has no handler for " .. tostring(command))
     end
 end
 
 local function onObjectAdded(object)
-    if isServer and not isServer() then
+    if not Config.onAuthority() then
         return
     end
     Data.onObjectAdded(object)
@@ -514,7 +547,7 @@ end
 -- already in the save. LoadGridsquare does fire, and that is what brings
 -- the names back after a quit.
 local function onLoadGridsquare(square)
-    if isServer and not isServer() then
+    if not Config.onAuthority() then
         return
     end
     if not square or not square.getObjects then

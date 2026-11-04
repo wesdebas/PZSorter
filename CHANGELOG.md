@@ -14,6 +14,7 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 - The loot window uses the crate's name (or "Sorter Crate"), not the generic "Crate".
 - Placing a crate opens the name box. Rename is on the right-click menu as well.
 - The build-menu icon is a real texture, so the log no longer warns that "default" is missing.
+- Single player was skipping every save and every name box. On 42.21, isClient() and isServer() are both false there, and the old guards treated that as "do nothing". Naming, Rename, and Dismantle now run directly in that case. A vanilla rename in the loot window is kept.
 
 ### Added
 

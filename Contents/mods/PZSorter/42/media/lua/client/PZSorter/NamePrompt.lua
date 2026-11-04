@@ -89,23 +89,35 @@ local function sendName(player, object, name)
     local record = recordOf(object)
     local square = object and object.getSquare and object:getSquare()
     if not square then
+        print("PZSorter: sendName has no square")
         return
     end
-    -- Show the name at once. The server writes the same trimmed text and
-    -- sends it back; if it refuses, NameRejected reopens the box.
+    print("PZSorter: name chosen " .. tostring(name))
+    -- Show the name at once. The save is written here in single player,
+    -- because isClient() and isServer() are both false and a command to
+    -- ourselves is not delivered.
     applyLocalName(object, name, true)
     if PZSorter.Tooltip and PZSorter.Tooltip.applyName then
         PZSorter.Tooltip.applyName(object)
     end
-    if sendClientCommand then
-        sendClientCommand(player, Config.COMMAND_MODULE, "SetName", {
-            id = record and record.id or nil,
-            x = square:getX(),
-            y = square:getY(),
-            z = square:getZ(),
-            name = name,
-        })
+    local args = {
+        id = record and record.id or nil,
+        x = square:getX(),
+        y = square:getY(),
+        z = square:getZ(),
+        name = name,
+    }
+    if Config.onAuthority() and PZSorter.SorterData and PZSorter.SorterData.setName then
+        print("PZSorter: storing name directly")
+        PZSorter.SorterData.setName(player, args)
+        return
     end
+    if sendClientCommand then
+        print("PZSorter: command sent SetName")
+        sendClientCommand(player, Config.COMMAND_MODULE, "SetName", args)
+        return
+    end
+    print("PZSorter: no way to store the name")
 end
 
 PZSorterNamePromptUI = ISPanel:derive("PZSorterNamePromptUI")
@@ -216,7 +228,9 @@ function PZSorterNamePromptUI:onKeyPressed(key)
 end
 
 local function openBox(player, object, suggested, errorReason)
+    print("PZSorter: prompt opened suggested=" .. tostring(suggested))
     if uiOpen then
+        print("PZSorter: prompt already open")
         return
     end
     uiOpen = true
@@ -293,14 +307,14 @@ local function onTick()
 end
 
 local function onObjectAdded(object)
-    if isClient and not isClient() then
+    if not Config.onPlayer() then
         return
     end
     remember(object)
 end
 
 local function onLoadGridsquare(square)
-    if isClient and not isClient() then
+    if not Config.onPlayer() then
         return
     end
     if not square or not square.getObjects then
@@ -319,7 +333,9 @@ local function onLoadGridsquare(square)
 end
 
 function Prompt.onBuilt(object, character)
-    if isClient and not isClient() then
+    print("PZSorter: prompt onBuilt player=" .. tostring(Config.onPlayer()))
+    if not Config.onPlayer() then
+        print("PZSorter: prompt skipped, dedicated server has no ui")
         return
     end
     local record = recordOf(object)
@@ -369,6 +385,37 @@ local function findSorterAt(x, y, z, id)
     return nil
 end
 
+function Prompt.beginRename(player, object)
+    print("PZSorter: Rename clicked")
+    if not player or not object then
+        print("PZSorter: Rename missing player or crate")
+        return
+    end
+    local record = recordOf(object)
+    local suggested = "Sorter 1"
+    if record then
+        local payload = PZSorter.Names.promptFor(record, true)
+        if payload and payload.name then
+            suggested = payload.name
+        end
+    else
+        local container = object.getContainer and object:getContainer()
+        local custom = container and container.getCustomName and container:getCustomName()
+        local kept = PZSorter.Names.validate(custom)
+        if kept and kept ~= "Sorter Crate" then
+            suggested = kept
+        end
+        print("PZSorter: Rename has no saved record, suggesting " .. suggested)
+    end
+    local ok, err = pcall(function()
+        openBox(player, object, suggested)
+    end)
+    if not ok then
+        uiOpen = false
+        print("PZSorter: Rename box failed: " .. tostring(err))
+    end
+end
+
 local function onFillRename(playerNum, context, worldobjects, test)
     -- Separate from dismantle. A tool-tag error must not hide Rename.
     local ok, err = pcall(function()
@@ -396,14 +443,8 @@ local function onFillRename(playerNum, context, worldobjects, test)
             return
         end
         local player = getSpecificPlayer(playerNum)
-        context:addOption(getText("IGUI_PZSorter_Rename"), player, function()
-            local record = recordOf(object)
-            local payload = PZSorter.Names.promptFor(record, true)
-            if not payload or not player then
-                return
-            end
-            openBox(player, object, payload.name)
-        end)
+        print("PZSorter: Rename added to the menu")
+        context:addOption(getText("IGUI_PZSorter_Rename"), player, Prompt.beginRename, object)
         if test then
             return
         end

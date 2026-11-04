@@ -148,4 +148,21 @@ function Names.containerTitle(customName)
     return "Sorter Crate"
 end
 
+-- The vanilla loot window can rename a container on its own. That name is
+-- the one on the container. Ours is the one in the crate's save data.
+-- If they differ, and the container name is not the fallback we wrote,
+-- the vanilla rename wins and should be copied into the save.
+-- Returns the title to show, and true when the save data should change.
+function Names.reconcile(storedName, containerName)
+    local stored = Names.validate(storedName)
+    local custom = Names.validate(containerName)
+    if custom and custom ~= "Sorter Crate" and custom ~= stored then
+        return custom, true
+    end
+    if stored then
+        return stored, false
+    end
+    return "Sorter Crate", false
+end
+
 return Names

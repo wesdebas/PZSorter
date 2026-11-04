@@ -54,4 +54,31 @@ function PZSorter.Config.isSorterSpriteName(spriteName)
         or spriteName == facings.N
 end
 
+-- 42.21 single player reports isClient() and isServer() both false.
+-- A guard written as "if not isServer() then return" therefore skips the
+-- only process that can save the name or remove the crate.
+-- Dedicated server: isServer() true, isClient() false.
+-- Multiplayer client: isClient() true, isServer() false.
+-- Single player: both false, and this process is both the player and the save.
+
+function PZSorter.Config.onAuthority()
+    if isServer and isServer() then
+        return true
+    end
+    if isClient and isClient() then
+        return false
+    end
+    return true
+end
+
+function PZSorter.Config.onPlayer()
+    if isClient and isClient() then
+        return true
+    end
+    if isServer and isServer() then
+        return false
+    end
+    return true
+end
+
 return PZSorter.Config

@@ -124,37 +124,48 @@ function PZSorterDismantleAction:update()
     end
 end
 
-function PZSorterDismantleAction:send()
-    -- perform() runs on the client. complete() is the hook some Build 42
-    -- builds call instead, including on the listen server. Either one is
-    -- enough, and the guard stops the crate being dismantled twice.
-    if self._sent then
+function PZSorterDismantleAction:doDismantle(where)
+    if self._done then
+        print("PZSorter: dismantle already done from " .. tostring(where))
         return
+    end
+    print("PZSorter: dismantle " .. tostring(where) .. " authority=" .. tostring(Config.onAuthority()))
+    if Config.onAuthority() and PZSorter.SorterData and PZSorter.SorterData.dismantleObject then
+        local ok, err = pcall(function()
+            PZSorter.SorterData.dismantleObject(self.character, self.object)
+        end)
+        if ok then
+            self._done = true
+            return
+        end
+        print("PZSorter: dismantle direct call failed: " .. tostring(err))
     end
     local square = self.object and self.object.getSquare and self.object:getSquare()
     local modData = self.object and self.object.getModData and self.object:getModData()
     local record = modData and modData[Config.MOD_DATA_KEY]
-    if not (square and record and sendClientCommand) then
-        -- Leave _sent clear so complete() can try if perform() ran first
-        -- and the record was not on the object yet.
+    if not (square and sendClientCommand) then
+        print("PZSorter: dismantle has no command path")
         return
     end
-    self._sent = true
+    print("PZSorter: command sent Dismantle")
     sendClientCommand(self.character, Config.COMMAND_MODULE, "Dismantle", {
-        id = record.id,
+        id = record and record.id or nil,
         x = square:getX(),
         y = square:getY(),
         z = square:getZ(),
     })
+    self._done = true
 end
 
 function PZSorterDismantleAction:perform()
-    self:send()
+    print("PZSorter: dismantle perform()")
+    self:doDismantle("perform")
     ISBaseTimedAction.perform(self)
 end
 
 function PZSorterDismantleAction:complete()
-    self:send()
+    print("PZSorter: dismantle complete()")
+    self:doDismantle("complete")
     return true
 end
 
