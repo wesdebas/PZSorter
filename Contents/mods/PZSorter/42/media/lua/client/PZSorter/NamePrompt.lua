@@ -13,6 +13,7 @@ require "ISUI/ISTextEntryBox"
 require "ISUI/ISLabel"
 require "PZSorter/Config"
 require "PZSorter/Names"
+require "PZSorter/BuildHook"
 
 PZSorter = PZSorter or {}
 PZSorter.NamePrompt = PZSorter.NamePrompt or {}
@@ -87,15 +88,18 @@ end
 local function sendName(player, object, name)
     local record = recordOf(object)
     local square = object and object.getSquare and object:getSquare()
-    if not record or not square then
+    if not square then
         return
     end
     -- Show the name at once. The server writes the same trimmed text and
     -- sends it back; if it refuses, NameRejected reopens the box.
     applyLocalName(object, name, true)
+    if PZSorter.Tooltip and PZSorter.Tooltip.applyName then
+        PZSorter.Tooltip.applyName(object)
+    end
     if sendClientCommand then
         sendClientCommand(player, Config.COMMAND_MODULE, "SetName", {
-            id = record.id,
+            id = record and record.id or nil,
             x = square:getX(),
             y = square:getY(),
             z = square:getZ(),
@@ -314,8 +318,135 @@ local function onLoadGridsquare(square)
     end
 end
 
+function Prompt.onBuilt(object, character)
+    if isClient and not isClient() then
+        return
+    end
+    local record = recordOf(object)
+    -- promptFor returns nil once the name is confirmed. A missing record
+    -- still opens the box: the build can finish on the client before the
+    -- server's save data has arrived, and "Sorter 1" is the same default.
+    if record and record.nameConfirmed then
+        return
+    end
+    local payload = PZSorter.Names.promptFor(record, false)
+    local suggested = payload and payload.name or "Sorter 1"
+    local player = character
+    if not player or not player.getPlayerNum then
+        player = getSpecificPlayer(0)
+    end
+    if not player then
+        return
+    end
+    local ok, err = pcall(function()
+        openBox(player, object, suggested)
+    end)
+    if not ok then
+        uiOpen = false
+        print("PZSorter: name prompt failed: " .. tostring(err))
+    end
+end
+
+local function findSorterAt(x, y, z, id)
+    local cell = getCell()
+    if not cell then
+        return nil
+    end
+    local square = cell:getGridSquare(x, y, z)
+    if not square or not square.getObjects then
+        return nil
+    end
+    local objects = square:getObjects()
+    for i = 0, objects:size() - 1 do
+        local object = objects:get(i)
+        if isSorter(object) then
+            local record = recordOf(object)
+            if id == nil or (record and tostring(record.id) == tostring(id)) then
+                return object
+            end
+        end
+    end
+    return nil
+end
+
+local function onFillRename(playerNum, context, worldobjects, test)
+    -- Separate from dismantle. A tool-tag error must not hide Rename.
+    local ok, err = pcall(function()
+        if not context or not context.addOption then
+            return
+        end
+        local object = nil
+        if worldobjects and worldobjects.size and worldobjects.get then
+            for i = 0, worldobjects:size() - 1 do
+                local candidate = worldobjects:get(i)
+                if isSorter(candidate) then
+                    object = candidate
+                    break
+                end
+            end
+        elseif type(worldobjects) == "table" then
+            for _, candidate in ipairs(worldobjects) do
+                if isSorter(candidate) then
+                    object = candidate
+                    break
+                end
+            end
+        end
+        if not object then
+            return
+        end
+        local player = getSpecificPlayer(playerNum)
+        context:addOption(getText("IGUI_PZSorter_Rename"), player, function()
+            local record = recordOf(object)
+            local payload = PZSorter.Names.promptFor(record, true)
+            if not payload or not player then
+                return
+            end
+            openBox(player, object, payload.name)
+        end)
+        if test then
+            return
+        end
+    end)
+    if not ok then
+        print("PZSorter: rename menu failed: " .. tostring(err))
+    end
+end
+
 local function onServerCommand(module, command, args)
-    if module ~= Config.COMMAND_MODULE or command ~= "NameRejected" then
+    if module ~= Config.COMMAND_MODULE then
+        return
+    end
+    if command == "OpenName" and type(args) == "table" then
+        local player = getSpecificPlayer(0)
+        local object = findSorterAt(args.x, args.y, args.z, args.id)
+        if object and PZSorter.Tooltip and PZSorter.Tooltip.applyName then
+            local record = recordOf(object)
+            if record and args.name and not record.nameConfirmed then
+                record.name = args.name
+            end
+            PZSorter.Tooltip.applyName(object)
+        end
+        if not player then
+            return
+        end
+        local suggested = args.name or "Sorter 1"
+        if object then
+            local record = recordOf(object)
+            if record and record.nameConfirmed then
+                return
+            end
+        end
+        local ok, err = pcall(function()
+            openBox(player, object, suggested)
+        end)
+        if not ok then
+            uiOpen = false
+            print("PZSorter: name prompt failed: " .. tostring(err))
+        end
+        return
+    end
+    if command ~= "NameRejected" then
         return
     end
     if type(args) ~= "table" then
@@ -357,6 +488,7 @@ Events.OnTick.Add(onTick)
 Events.OnObjectAdded.Add(onObjectAdded)
 Events.LoadGridsquare.Add(onLoadGridsquare)
 Events.OnServerCommand.Add(onServerCommand)
+Events.OnFillWorldObjectContextMenu.Add(onFillRename)
 
 print("PZSorter: name prompt loaded (0.1.0)")
 

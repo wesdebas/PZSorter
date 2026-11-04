@@ -10,6 +10,10 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - The Sorter Crate shows up in the build menu. The menu needs an entity style (`ES_PZSorter_SorterCrate`) for the name and icon. Search for "Sorter" under Carpentry, Furniture.
+- Right-click no longer crashes. Dismantle asks the inventory with an ItemTag, not a string.
+- The loot window uses the crate's name (or "Sorter Crate"), not the generic "Crate".
+- Placing a crate opens the name box. Rename is on the right-click menu as well.
+- The build-menu icon is a real texture, so the log no longer warns that "default" is missing.
 
 ### Added
 

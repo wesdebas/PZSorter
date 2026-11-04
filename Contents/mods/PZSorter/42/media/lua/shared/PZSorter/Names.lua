@@ -115,4 +115,37 @@ function Names.nextFromRecords(records)
     return Names.nextDefault(names)
 end
 
+-- What the name box should show after a crate is placed.
+-- A confirmed name does not open the box again. Rename passes force = true.
+-- The suggested text is the stored name, or "Sorter 1" when that is missing.
+function Names.promptFor(record, force)
+    if type(record) ~= "table" then
+        return nil
+    end
+    if record.nameConfirmed and not force then
+        return nil
+    end
+    local name = Names.validate(record.name)
+    if not name then
+        name = "Sorter 1"
+    end
+    return {
+        id = record.id,
+        name = name,
+        x = record.x,
+        y = record.y,
+        z = record.z,
+    }
+end
+
+-- The loot window title. A real name wins. Otherwise "Sorter Crate", never
+-- the generic "Crate" that the tile's container type would show.
+function Names.containerTitle(customName)
+    local name = Names.validate(customName)
+    if name then
+        return name
+    end
+    return "Sorter Crate"
+end
+
 return Names

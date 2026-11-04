@@ -15,6 +15,7 @@
 require "PZSorter/Config"
 require "PZSorter/Names"
 require "PZSorter/Dismantle"
+require "PZSorter/ItemTags"
 
 PZSorter = PZSorter or {}
 PZSorter.SorterData = PZSorter.SorterData or {}
@@ -269,11 +270,19 @@ local function commandSetName(player, args)
         return
     end
     local record = object:getModData()[Config.MOD_DATA_KEY]
+    if type(record) ~= "table" then
+        Data.onObjectAdded(object)
+        record = object:getModData()[Config.MOD_DATA_KEY]
+    end
+    if type(record) ~= "table" then
+        return
+    end
     record.name = name
     record.nameConfirmed = true
     local world = worldTable()
     world.sorters[tostring(record.id)] = copyRecord(record)
     syncWorld()
+    Data.applyContainerName(object)
     if object.transmitModData then
         pcall(function()
             object:transmitModData()
@@ -281,39 +290,61 @@ local function commandSetName(player, args)
     end
 end
 
--- Tags the recipe system uses. The Lua inventory calls are not consistent
--- about the "base:" prefix across builds, so both spellings are tried.
-local TOOL_TAGS = {
-    "base:hammer",
-    "hammer",
-    "base:saw",
-    "saw",
-    "base:hacksaw",
-    "hacksaw",
-    "base:smallsaw",
-    "smallsaw",
-}
-
 local function tagsInInventory(player)
-    local found = {}
     local inventory = player and player.getInventory and player:getInventory()
-    if not inventory then
-        return found
+    local ok, found = pcall(function()
+        return PZSorter.ItemTags.held(inventory)
+    end)
+    if not ok then
+        print("PZSorter: tool check failed: " .. tostring(found))
+        return {}
     end
-    for _, tag in ipairs(TOOL_TAGS) do
-        local has = false
-        if inventory.containsTag and inventory:containsTag(tag) then
-            has = true
-        elseif inventory.getFirstTagRecurse and inventory:getFirstTagRecurse(tag) then
-            has = true
-        elseif inventory.getFirstTag and inventory:getFirstTag(tag) then
-            has = true
-        end
-        if has then
-            found[#found + 1] = tag
-        end
+    return found or {}
+end
+
+-- The loot window reads container:getCustomName() (ISInventoryPage, the
+-- world-object loop). The container type "crate" would otherwise title
+-- itself "Crate".
+function Data.applyContainerName(object)
+    if not object or not object.getContainer then
+        return
     end
-    return found
+    local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
+    local title = PZSorter.Names.containerTitle(record and record.name)
+    local container = object:getContainer()
+    if container and container.setCustomName then
+        pcall(function()
+            container:setCustomName(title)
+        end)
+    end
+end
+
+-- SpriteConfig.OnCreate. Runs when the build menu finishes the crate,
+-- including when Build cheat skips the material check.
+function Data.onBuilt(object, character)
+    if isServer and not isServer() then
+        return
+    end
+    Data.onObjectAdded(object)
+    Data.applyContainerName(object)
+    local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
+    if not character or not sendServerCommand or type(record) ~= "table" then
+        return
+    end
+    if record.nameConfirmed then
+        return
+    end
+    local square = object.getSquare and object:getSquare()
+    if not square then
+        return
+    end
+    sendServerCommand(character, Config.COMMAND_MODULE, "OpenName", {
+        id = record.id,
+        name = record.name,
+        x = square:getX(),
+        y = square:getY(),
+        z = square:getZ(),
+    })
 end
 
 local function carpentryLevel(player)

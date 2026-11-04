@@ -6,6 +6,7 @@
     "IGUI_PZSorter_NameOk": "OK",
     "IGUI_PZSorter_NameKeep": "Use default",
     "IGUI_PZSorter_Dismantle": "Dismantle",
+    "IGUI_PZSorter_Rename": "Rename",
     "IGUI_PZSorter_DismantleNeedTools": "Needs a hammer and a saw.",
     "IGUI_PZSorter_DefaultObjectName": "Sorter Crate"
 }

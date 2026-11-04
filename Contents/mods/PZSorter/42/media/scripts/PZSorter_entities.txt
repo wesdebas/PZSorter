@@ -17,6 +17,7 @@ module PZSorter
         }
         component SpriteConfig
         {
+            OnCreate = PZSorter.OnSpriteCreate,
             face E
             {
                 layer

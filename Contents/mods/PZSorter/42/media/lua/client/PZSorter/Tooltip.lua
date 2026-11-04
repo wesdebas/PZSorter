@@ -10,6 +10,7 @@
 
 require "ISUI/ISToolTip"
 require "PZSorter/Config"
+require "PZSorter/Names"
 
 PZSorter = PZSorter or {}
 PZSorter.Tooltip = PZSorter.Tooltip or {}
@@ -47,24 +48,55 @@ local function spriteNameOf(object)
     return sprite:getName()
 end
 
-function Tooltip.applyName(object)
+function Tooltip.titleFor(object)
     local record = recordOf(object)
-    if not record or type(record.name) ~= "string" or record.name == "" then
+    return PZSorter.Names.containerTitle(record and record.name)
+end
+
+function Tooltip.applyName(object)
+    if not object then
         return
     end
-    -- setName is not on every build. The container title is the one the
-    -- loot window uses, and it is the one we care about most after hover.
+    local title = Tooltip.titleFor(object)
+    -- setName is not on every build. The loot window reads
+    -- container:getCustomName() while it builds the container button
+    -- (ISInventoryPage, the world-object loop). Without that, a container
+    -- whose type is "crate" is titled "Crate".
     if object.setName then
         pcall(function()
-            object:setName(record.name)
+            object:setName(title)
         end)
     end
     if object.getContainer then
         local container = object:getContainer()
         if container and container.setCustomName then
             pcall(function()
-                container:setCustomName(record.name)
+                container:setCustomName(title)
             end)
+        end
+    end
+end
+
+local function retitleOpenWindows(page)
+    if not page or not page.backpacks then
+        return
+    end
+    for i = 1, #page.backpacks do
+        local button = page.backpacks[i]
+        local container = button and button.inventory
+        local parent = container and container.getParent and container:getParent()
+        if parent and Config.isSorterSpriteName(spriteNameOf(parent)) then
+            local title = Tooltip.titleFor(parent)
+            button.name = title
+            button.tooltip = title
+            if button.setTitle then
+                button:setTitle(title)
+            end
+            if container.setCustomName then
+                pcall(function()
+                    container:setCustomName(title)
+                end)
+            end
         end
     end
 end
@@ -150,11 +182,7 @@ local function onTick()
         return
     end
     Tooltip.applyName(object)
-    local record = recordOf(object)
-    local text = record and record.name or nil
-    if type(text) ~= "string" or text == "" then
-        text = getText("IGUI_PZSorter_DefaultObjectName")
-    end
+    local text = Tooltip.titleFor(object)
     local shown, err = pcall(function()
         showHover(text)
     end)
@@ -180,7 +208,20 @@ local function onLoadGridsquare(square)
     end
 end
 
+local function onRefreshContainers(page, state)
+    if state ~= "end" then
+        return
+    end
+    local ok, err = pcall(function()
+        retitleOpenWindows(page)
+    end)
+    if not ok then
+        print("PZSorter: loot title failed: " .. tostring(err))
+    end
+end
+
 Events.OnTick.Add(onTick)
 Events.LoadGridsquare.Add(onLoadGridsquare)
+Events.OnRefreshInventoryWindowContainers.Add(onRefreshContainers)
 
 return Tooltip

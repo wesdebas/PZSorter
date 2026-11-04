@@ -13,6 +13,7 @@
 require "TimedActions/ISBaseTimedAction"
 require "PZSorter/Config"
 require "PZSorter/Dismantle"
+require "PZSorter/ItemTags"
 
 PZSorter = PZSorter or {}
 PZSorter.DismantleMenu = PZSorter.DismantleMenu or {}
@@ -24,17 +25,6 @@ if Menu._hooked then
     return Menu
 end
 Menu._hooked = true
-
-local PROBE_TAGS = {
-    "base:hammer",
-    "hammer",
-    "base:saw",
-    "saw",
-    "base:hacksaw",
-    "hacksaw",
-    "base:smallsaw",
-    "smallsaw",
-}
 
 local function spriteNameOf(object)
     if not object or not object.getSprite then
@@ -71,25 +61,15 @@ local function findSorter(worldobjects)
 end
 
 local function tagsHeld(player)
-    local found = {}
     local inventory = player and player.getInventory and player:getInventory()
-    if not inventory then
-        return found
+    local ok, found = pcall(function()
+        return PZSorter.ItemTags.held(inventory)
+    end)
+    if not ok then
+        print("PZSorter: tool check failed: " .. tostring(found))
+        return {}
     end
-    for _, tag in ipairs(PROBE_TAGS) do
-        local has = false
-        if inventory.containsTag and inventory:containsTag(tag) then
-            has = true
-        elseif inventory.getFirstTagRecurse and inventory:getFirstTagRecurse(tag) then
-            has = true
-        elseif inventory.getFirstTag and inventory:getFirstTag(tag) then
-            has = true
-        end
-        if has then
-            found[#found + 1] = tag
-        end
-    end
-    return found
+    return found or {}
 end
 
 PZSorterDismantleAction = ISBaseTimedAction:derive("PZSorterDismantleAction")
@@ -195,28 +175,32 @@ local function startDismantle(player, object)
 end
 
 local function onFillMenu(playerNum, context, worldobjects, test)
-    -- The game probes the menu with test == true and then builds it for
-    -- real. Adding the option both times is what the vanilla menus do; the
-    -- probe throws the probe menu away.
-    if not context or not context.addOption then
-        return
-    end
-    local object = findSorter(worldobjects)
-    if not object then
-        return
-    end
-    local player = getSpecificPlayer(playerNum)
-    local option = context:addOption(getText("IGUI_PZSorter_Dismantle"), player, startDismantle, object)
-    if not PZSorter.Dismantle.hasRequiredTools(tagsHeld(player)) then
-        option.notAvailable = true
-        if ISWorldObjectContextMenu and ISWorldObjectContextMenu.addToolTip then
-            local tip = ISWorldObjectContextMenu.addToolTip()
-            tip.description = getText("IGUI_PZSorter_DismantleNeedTools")
-            option.toolTip = tip
+    -- A throw here used to kill the whole right-click menu, and it fired
+    -- again on every click. Keep this listener from ever escaping.
+    local ok, err = pcall(function()
+        if not context or not context.addOption then
+            return
         end
-    end
-    if test then
-        return
+        local object = findSorter(worldobjects)
+        if not object then
+            return
+        end
+        local player = getSpecificPlayer(playerNum)
+        local option = context:addOption(getText("IGUI_PZSorter_Dismantle"), player, startDismantle, object)
+        if not PZSorter.Dismantle.hasRequiredTools(tagsHeld(player)) then
+            option.notAvailable = true
+            if ISWorldObjectContextMenu and ISWorldObjectContextMenu.addToolTip then
+                local tip = ISWorldObjectContextMenu.addToolTip()
+                tip.description = getText("IGUI_PZSorter_DismantleNeedTools")
+                option.toolTip = tip
+            end
+        end
+        if test then
+            return
+        end
+    end)
+    if not ok then
+        print("PZSorter: dismantle menu failed: " .. tostring(err))
     end
 end
 

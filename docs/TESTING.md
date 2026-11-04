@@ -26,7 +26,7 @@ pause
 
 Then start Project Zomboid. In **Mods**, enable **PZSorter**. Start a fresh **Sandbox** game. The PZSorter page is where Sorter range lives.
 
-Debug mode is optional. Add `-debug` to the Steam launch options if you want to spawn planks, screws, a small metal sheet, a hammer, a saw, and Carpentry levels quickly.
+Debug mode is optional. Add `-debug` to the Steam launch options if you want to spawn planks, screws, a small metal sheet, a hammer, a saw, and Carpentry levels quickly. The first check (recipe greyed out without materials or Carpentry 1) needs **Build cheat turned off** in the debug Cheats panel. While Build cheat is on, the log says materials are not required, so that check cannot fail.
 
 If something breaks, send `%USERPROFILE%\Zomboid\console.txt`.
 

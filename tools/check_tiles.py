@@ -138,6 +138,7 @@ def main() -> None:
         "Tags = Carpentry;Furniture,",
         "Tooltip = Tooltip_PZSorter_SorterCrate,",
         "entityStyle = ES_PZSorter_SorterCrate,",
+        "OnCreate = PZSorter.OnSpriteCreate,",
         "tags[base:hammer]",
         "tags[base:screwdriver]",
     ):
@@ -152,6 +153,7 @@ def main() -> None:
         "entity ES_PZSorter_SorterCrate",
         "DisplayName = EC_PZSorter_SorterCrate,",
         "LuaWindowClass = ISEntityWindow,",
+        "Icon = Build_PZSorterCrate,",
     ):
         if line not in skin:
             fail("xui skin is missing %s" % line)
@@ -175,6 +177,9 @@ def main() -> None:
         if sprite_name(index) not in config:
             fail("Config.lua does not name %s" % sprite_name(index))
 
+    icon = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "media" / "textures" / "Build_PZSorterCrate.png"
+    if not icon.is_file():
+        fail("missing build menu icon " + str(icon))
     if Image.open(POSTER_PATH).size != (256, 256):
         fail("poster.png is not 256x256")
     if Image.open(ICON_PATH).size != (64, 64):

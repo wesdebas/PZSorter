@@ -4,6 +4,7 @@
    and the entry has no name to search for.
    The skin has to be module Base. A skin in our own module is ignored.
    DisplayName is the Entity.json key, so the button reads "Sorter Crate".
+   Icon is media/textures/Build_PZSorterCrate.png. The name "default" is not a texture.
 */
 
 module Base
@@ -14,7 +15,7 @@ module Base
         {
             LuaWindowClass = ISEntityWindow,
             DisplayName = EC_PZSorter_SorterCrate,
-            Icon = default,
+            Icon = Build_PZSorterCrate,
             BuildDescription = Tooltip_PZSorter_SorterCrate,
         }
     }
