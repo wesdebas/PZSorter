@@ -12,12 +12,15 @@ When this file and the project plan disagree, this file wins. The design spec st
 - Dismantling gives back part of the planks and part of the screws, scaled by Carpentry the way vanilla furniture tables do. It always gives back the 1 Small Metal Sheet, at every skill.
 - The final crate art is in, in the same files the placeholder used. Facings 2 (W) and 3 (N) show the crate's back on purpose. See `docs/art/SPRITE-SPEC.md`. Do not redraw it with `tools/build_tiles.py --placeholders`.
 
+## Already in this build (step 2)
+
+- Outside a safehouse, anyone can use a sorter, the same way anyone can use a vanilla container. Inside a safehouse, only members can. The check is `SafeHouse.getSafeHouse` and `playerAllowed`. If that call is missing, the action is allowed and a console line says so.
+- A fridge/freezer combo is two rows, one for the fridge and one for the freezer. The row name comes from the container type plus a number, like "Fridge 1".
+
 ## For later steps (do not build these yet)
 
 - **Frozen** means the food is frozen right now. It does not mean "this kind of food can be frozen".
 - **Perishable** means anything that can rot.
 - Non-perishable was not given its own sentence. Until it is, treat it as food that cannot rot and is not frozen right now, so the three food groups do not overlap.
-- Outside a safehouse, anyone can use a sorter, the same way anyone can use a vanilla container.
-- A fridge/freezer combo is two rows, one for the fridge and one for the freezer.
 - A realistic sort of 50 items takes about 10 seconds.
 - Workshop visibility is Public. wesdebas publishes the Workshop item himself.

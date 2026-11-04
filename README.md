@@ -5,7 +5,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 ![Sorter Crate concept art](docs/images/sorter-crate-concept.jpg)
 *Concept art for the Sorter Crate.*
 
-> Status: step 1 (this branch) can build, name, and dismantle the Sorter Crate. Sorting is not in yet.
+> Status: step 2 (this branch) can build, name, and dismantle the Sorter Crate, and assign containers to it. Filters and Sort are not in yet.
 
 ## How it works
 
@@ -15,7 +15,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
    - Tools: Hammer and Screwdriver (not consumed)
    - Holds only 50 capacity, so it's a sorting tool, not extra storage.
 2. **Name it** when you place it, like "Main Base" or "Farm".
-3. **Assign containers.** Right-click any existing storage (crates, shelves, fridges, freezers, and so on) and choose **Assign to Sorter**. Only containers you assign are used. Each one must be within the sorter's range (20 tiles by default).
+3. **Assign containers.** Right-click any existing storage (crates, shelves, fridges, freezers, and so on) and choose **Assign to Sorter**. Only containers you assign are used. Each one must be within the sorter's range (20 tiles by default). A fridge and freezer on one tile are two rows. **Open Sorter** on the crate lists them. Filters are not in this branch yet.
 4. **Set filters.** Each assigned container gets a filter tree like RimWorld's storage settings. Tick a whole category like **Food**, or expand it and pick single items, like a box that only takes screws and hammers.
 5. **Sort.** Right-click the Sorter Crate and choose **Sort**. Your character moves each item to the container whose filter matches. Anything that doesn't match, or doesn't fit, stays in the Sorter Crate.
 
@@ -36,8 +36,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 
 - "Copy from contents" sets a container's filter from what it already holds.
 - Search, Allow All, and Clear All in the filter tree.
-- Linked containers glow while the Sorter panel is open.
-- Multiplayer support that respects safehouse permissions.
+- Multiplayer item moves. Assigning already checks safehouse membership: outside a safehouse anyone can use a sorter, and inside one only members can.
 
 ## Install and test
 
@@ -58,7 +57,7 @@ For this branch:
 ```
 cd /d C:\AI\Projects\PZSorter
 git fetch
-git checkout feature/crate-and-naming
+git checkout feature/assign-containers
 git pull
 ```
 

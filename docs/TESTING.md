@@ -1,6 +1,6 @@
 # Testing PZSorter
 
-This is the install and the checks for the crate-and-naming branch. Sorting, assigning containers, and the filter tree are not in this branch.
+This is the install and the checks for the assign-containers branch. Building and naming from step 1 are still here. This branch adds assigning containers and the sorter panel. Filters and Sort are not in yet.
 
 Target game: Project Zomboid **Build 42.21** (the current stable build). The mod is marked Build 42 only.
 
@@ -19,7 +19,7 @@ The `mklink /J` line makes a folder link, so the game sees the repo inside its W
 ```
 cd /d C:\AI\Projects\PZSorter
 git fetch
-git checkout feature/crate-and-naming
+git checkout feature/assign-containers
 git pull
 pause
 ```
@@ -62,3 +62,20 @@ If the search finds nothing, check `console.txt` for `Cannot find entity ui info
 - [ ] `console.txt` has no PZSorter errors. A line that says the crate save data loaded is expected.
 
 Rotate the crate while placing it if the build menu lets you. East and South show the front. Facings 2 (W) and 3 (N) show the back on purpose.
+
+## Step 2 checklist
+
+Build two Sorter Crates a few tiles apart and name them, for example "Home" and "Farm". You also need an ordinary container (a crate, a counter, a shelf). A fridge with a freezer is useful but not required. Sorter range on the sandbox page stays at 20 unless a check says otherwise.
+
+- [ ] Right-click the ordinary container. **Assign to Sorter** lists Home and Farm when both are within 20 tiles. Pick Home.
+- [ ] Right-click that container again. The menu offers **Unassign from Home**, and **Move to Farm** instead of a second assign. Move it. Open Sorter on Home: the container is gone. Open Sorter on Farm: it is there.
+- [ ] Put a container just inside 20 tiles of a sorter, and be sure another sorter is 21 or more tiles away (count the tiles; a diagonal counts the same as straight). The far sorter is greyed out. Its tooltip says "Too far from [Name]". One floor up or down still counts as in range. Two floors does not show as a choice.
+- [ ] On a fridge/freezer, Assign to Sorter has two entries, one for each part. Assigning one does not assign the other.
+- [ ] Two sorters do not share a container. After the move above, only Farm lists it.
+- [ ] Open Sorter. The header is the crate's name. The row shows the name (Fridge 1, Crate 1, and so on), a fill bar, and a green dot. Put something in the container: the bar moves. Sort and Preview are visible and cannot be clicked.
+- [ ] While the panel is open, the linked container glows. Hover the row: only that container glows. Close the panel: the glow is gone.
+- [ ] Pick up or destroy the linked container. Its row turns red and says Missing. It stays until Remove.
+- [ ] Remove, or Unassign from the right-click menu. The row is gone. That container can be assigned again.
+- [ ] Save, quit to the desktop, and load. The assignment is still there.
+- [ ] If you have a safehouse: a member can assign. Someone who is not a member gets "Only safehouse members can use this sorter." Outside a safehouse, anyone can. Skip this if the test save has no safehouse.
+- [ ] `console.txt` has no PZSorter errors. Lines that say the assign menu, `running Assign directly`, and `assigned` are expected. A grey sorter that still runs is a bug: the log would say `link refused, outside sorter range`.

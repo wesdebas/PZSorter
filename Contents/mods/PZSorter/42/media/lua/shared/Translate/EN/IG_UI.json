@@ -8,5 +8,20 @@
     "IGUI_PZSorter_Dismantle": "Dismantle",
     "IGUI_PZSorter_Rename": "Rename",
     "IGUI_PZSorter_DismantleNeedTools": "Needs a hammer and a saw.",
-    "IGUI_PZSorter_DefaultObjectName": "Sorter Crate"
+    "IGUI_PZSorter_DefaultObjectName": "Sorter Crate",
+    "IGUI_PZSorter_Assign": "Assign to Sorter",
+    "IGUI_PZSorter_MoveTo": "Move to %1",
+    "IGUI_PZSorter_Unassign": "Unassign from %1",
+    "IGUI_PZSorter_TooFar": "Too far from %1",
+    "IGUI_PZSorter_Open": "Open Sorter",
+    "IGUI_PZSorter_Sort": "Sort",
+    "IGUI_PZSorter_Preview": "Preview",
+    "IGUI_PZSorter_Remove": "Remove",
+    "IGUI_PZSorter_Missing": "Missing",
+    "IGUI_PZSorter_OutOfRange": "Out of range",
+    "IGUI_PZSorter_NotLoaded": "Not loaded",
+    "IGUI_PZSorter_Ok": "OK",
+    "IGUI_PZSorter_NoSorters": "No sorter nearby",
+    "IGUI_PZSorter_NoLinks": "No containers assigned yet.",
+    "IGUI_PZSorter_Safehouse": "Only safehouse members can use this sorter."
 }

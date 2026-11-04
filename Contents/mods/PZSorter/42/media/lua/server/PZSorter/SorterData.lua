@@ -47,6 +47,10 @@ local function worldTable()
     return stored
 end
 
+function Data.getWorld()
+    return worldTable()
+end
+
 local function syncWorld()
     -- getOrCreate's table is the one the save writes. In single player
     -- isServer() is false, and ModData.transmit can replace that table
@@ -515,6 +519,10 @@ function Data.dismantleObject(player, object)
     give(player, items.smallMetalSheet, result.smallMetalSheets)
     print("PZSorter: gave materials planks=" .. tostring(result.planks) .. " screws=" .. tostring(result.screws) .. " sheet=" .. tostring(result.smallMetalSheets))
     local record = object:getModData()[Config.MOD_DATA_KEY]
+    if record and PZSorter.Commands and PZSorter.Commands.releaseSorter then
+        print("PZSorter: clearing links before the crate is removed")
+        PZSorter.Commands.releaseSorter(record)
+    end
     print("PZSorter: removing crate")
     removeObject(object)
     if record and record.id ~= nil then
@@ -557,7 +565,8 @@ local function onClientCommand(module, command, player, args)
     local handler = COMMANDS[command]
     if handler then
         handler(player, args)
-    else
+    elseif command ~= "Assign" and command ~= "Move" and command ~= "Unassign" then
+        -- Those three are handled in Commands.lua, which has its own listener.
         print("PZSorter: OnClientCommand has no handler for " .. tostring(command))
     end
 end
@@ -589,6 +598,6 @@ Events.OnObjectAdded.Add(onObjectAdded)
 Events.LoadGridsquare.Add(onLoadGridsquare)
 Events.OnClientCommand.Add(onClientCommand)
 
-print("PZSorter: crate save data loaded (0.1.0)")
+print("PZSorter: crate save data loaded (0.2.0)")
 
 return Data

@@ -5,6 +5,16 @@ All notable changes to PZSorter are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-11-04
+
+### Added
+
+- Right-click a crate, shelf, counter, fridge, or freezer and choose **Assign to Sorter**. Sorters in range are listed. A sorter that is nearby but outside the sandbox square is greyed out, and the tooltip says "Too far from [Name]".
+- A container belongs to one sorter. If it already belongs to one, the menu offers **Move to [Name]** and **Unassign from [Name]**.
+- A fridge/freezer combo is two rows. Each row is named from the container type, like "Fridge 1" or "Freezer 1".
+- **Open Sorter** on the crate opens a panel. Each linked container shows its name, how full it is, and a status dot. Green is in range, grey is out of range, red says "Missing" when that container is gone. Remove unassigns it. Linked containers glow while the panel is open, and hovering a row glows only that one.
+- Inside a safehouse, only members can assign or unassign. Outside a safehouse, anyone can.
+
 ## [0.1.0] - 2026-11-03
 
 ### Fixed
