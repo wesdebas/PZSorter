@@ -56,7 +56,7 @@ That order matches the sources used while the sheet was still a placeholder:
 
 Vanilla's own built wooden crate only defines `face S` (one sprite, `carpentry_01_19`). It does not rotate. We still ship four faces because the build menu rotates an entity that defines more than one `face` block. The bed example on the Indie Stone forums shows the shape: a `face S` block and a `face E` block, each with a `row` of sprite names ([how to add new constructions](https://theindiestone.com/forums/topic/87969-42123-how-to-add-new-constructions/)).
 
-Each facing should show the name tag and the arrow on the side that faces that direction. The camera always sees the south-west and south-east sides of a box, so the north and west facings will show the tag climbing the far edge rather than a side the camera cannot see.
+East (cell 0) and South (cell 1) show the front of the crate. Facings 2 (W) and 3 (N) show the crate's back on purpose. The camera only sees the south-west and south-east sides of a box, so those two facings are the back, not a swapped pair of cells.
 
 ## File format
 

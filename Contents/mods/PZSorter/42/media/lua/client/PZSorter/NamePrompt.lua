@@ -30,6 +30,10 @@ Prompt._hooked = true
 -- Kahlua's userdata is a poor table key.
 local waiting = {}
 local uiOpen = false
+-- The crate whose box is on screen. A second open for that same crate
+-- (the placement hook plus a command, or the hook running twice) is ignored
+-- until this box closes. Rename after that still opens.
+local openKey = nil
 
 local function recordOf(object)
     if not object or not object.getModData then
@@ -187,6 +191,7 @@ end
 
 function PZSorterNamePromptUI:close()
     uiOpen = false
+    openKey = nil
     self:setVisible(false)
     self:removeFromUIManager()
 end
@@ -227,13 +232,27 @@ function PZSorterNamePromptUI:onKeyPressed(key)
     end
 end
 
+local function promptKey(object)
+    local record = recordOf(object)
+    if record and record.id ~= nil then
+        return "id:" .. tostring(record.id)
+    end
+    local square = object and object.getSquare and object:getSquare()
+    if square and square.getX then
+        return "sq:" .. tostring(square:getX()) .. ":" .. tostring(square:getY()) .. ":" .. tostring(square:getZ())
+    end
+    return nil
+end
+
 local function openBox(player, object, suggested, errorReason)
-    print("PZSorter: prompt opened suggested=" .. tostring(suggested))
-    if uiOpen then
-        print("PZSorter: prompt already open")
+    local key = promptKey(object)
+    if uiOpen or (key ~= nil and openKey == key) then
+        print("PZSorter: prompt already open for this crate")
         return
     end
     uiOpen = true
+    openKey = key
+    print("PZSorter: prompt opened suggested=" .. tostring(suggested))
     local panel = PZSorterNamePromptUI:new(player, object, suggested, errorReason)
     panel:initialise()
     panel:addToUIManager()
@@ -280,6 +299,7 @@ local function consider(object)
         -- The crate already has its suggested name saved. A broken box
         -- should not stop the game; the name can still be read on hover.
         uiOpen = false
+        openKey = nil
         print("PZSorter: name prompt failed: " .. tostring(err))
     end
 end
@@ -359,6 +379,7 @@ function Prompt.onBuilt(object, character)
     end)
     if not ok then
         uiOpen = false
+        openKey = nil
         print("PZSorter: name prompt failed: " .. tostring(err))
     end
 end
@@ -412,6 +433,7 @@ function Prompt.beginRename(player, object)
     end)
     if not ok then
         uiOpen = false
+        openKey = nil
         print("PZSorter: Rename box failed: " .. tostring(err))
     end
 end
@@ -483,6 +505,7 @@ local function onServerCommand(module, command, args)
         end)
         if not ok then
             uiOpen = false
+            openKey = nil
             print("PZSorter: name prompt failed: " .. tostring(err))
         end
         return

@@ -34,7 +34,7 @@ To go back to the last merged version: `git checkout main` then `git pull`.
 
 ## What you are checking
 
-The crate art is a placeholder. It says TEMP in red, and the metal plate has a letter (E, S, W, or N) so you can see which way it is facing. The real art is not in this branch.
+The final crate art is in. It is the wooden crate with the metal drop slot, the yellow stripe, and the branching arrow. Facings 2 (W) and 3 (N) show the crate's back on purpose. That is not a mix-up of the four cells.
 
 Dismantle needs a **hammer and a saw** (a hacksaw is fine). Building needs a hammer and a screwdriver. Those are not the same pair of tools.
 
@@ -55,10 +55,10 @@ If the search finds nothing, check `console.txt` for `Cannot find entity ui info
 - [ ] With 4 Planks, 10 Screws, 1 Small Metal Sheet, a Hammer, a Screwdriver, and Carpentry 1, build the crate. The hammer and the screwdriver are still in your inventory. The materials are gone.
 - [ ] The name box shows "Sorter 1". Try an empty name. Try a 25-character name. Both stay in the box and tell you why. Then accept a normal name.
 - [ ] Point at the crate. The name you typed shows. Put items in. The capacity is 50.
-- [ ] Build a second crate. The box suggests "Sorter 2".
+- [ ] Build a second crate. The box suggests "Sorter 2". A later crate takes the lowest "Sorter N" that no crate is still using. Save, quit, and load, then build another: it must not offer a number a crate you can still see is already using.
 - [ ] Save, quit to the desktop, and load. Both names are still there.
 - [ ] Dismantle one crate (right-click, Dismantle, with a hammer and a saw). The Small Metal Sheet comes back. Some or none of the planks and screws come back. Items that were inside are on the ground, not deleted.
 - [ ] On the Sandbox page, Sorter range is there, from 20 to 30, and a new game starts at 20.
 - [ ] `console.txt` has no PZSorter errors. A line that says the crate save data loaded is expected.
 
-Rotate the crate while placing it if the build menu lets you. The letter on the lid should match the facing the menu is using. If it does not, that is an art-order bug to report, not a reason to keep testing names.
+Rotate the crate while placing it if the build menu lets you. East and South show the front. Facings 2 (W) and 3 (N) show the back on purpose.

@@ -103,16 +103,43 @@ end
 
 -- The world save stores each crate as a record with a name field. This is
 -- the list the server passes in when a new crate needs a suggested name.
+-- A dismantled crate is marked gone and does not keep its number.
 function Names.nextFromRecords(records)
     local names = {}
     if type(records) == "table" then
         for _, record in pairs(records) do
-            if type(record) == "table" and type(record.name) == "string" then
+            if type(record) == "table" and not record.gone and type(record.name) == "string" then
                 names[#names + 1] = record.name
             end
         end
     end
     return Names.nextDefault(names)
+end
+
+-- Fold one crate into the world list the next suggestion reads.
+-- The same records, played back after a reload, must leave the next
+-- "Sorter N" unchanged. A gone crate frees its number.
+function Names.absorb(records, record)
+    if type(records) ~= "table" then
+        records = {}
+    end
+    if type(record) ~= "table" or record.id == nil then
+        return records
+    end
+    local id = tostring(record.id)
+    if record.gone or type(record.name) ~= "string" then
+        records[id] = { gone = true, id = id }
+        return records
+    end
+    records[id] = {
+        id = id,
+        name = record.name,
+        nameConfirmed = record.nameConfirmed and true or false,
+        x = record.x,
+        y = record.y,
+        z = record.z,
+    }
+    return records
 end
 
 -- What the name box should show after a crate is placed.
@@ -148,19 +175,29 @@ function Names.containerTitle(customName)
     return "Sorter Crate"
 end
 
--- The vanilla loot window can rename a container on its own. That name is
--- the one on the container. Ours is the one in the crate's save data.
--- If they differ, and the container name is not the fallback we wrote,
--- the vanilla rename wins and should be copied into the save.
+-- The loot window has two names that can disagree.
+-- storedName is the crate's save data (what the player typed, or the
+-- "Sorter N" we suggested). appliedName is the last name we ourselves
+-- wrote onto the container. containerName is whatever is on it now.
+--
+-- A name the player stored always wins over the automatic name still
+-- sitting on the container. That automatic name is appliedName, and it
+-- is not a rename they made. A container name is a vanilla rename only
+-- when it differs from the stored name and from the name we last wrote.
+-- The caller then writes the winner back to both, so they match again.
 -- Returns the title to show, and true when the save data should change.
-function Names.reconcile(storedName, containerName)
+function Names.reconcile(storedName, containerName, appliedName)
     local stored = Names.validate(storedName)
     local custom = Names.validate(containerName)
-    if custom and custom ~= "Sorter Crate" and custom ~= stored then
+    local applied = Names.validate(appliedName)
+    if custom and custom ~= "Sorter Crate" and custom ~= stored and custom ~= applied then
         return custom, true
     end
     if stored then
         return stored, false
+    end
+    if custom and custom ~= "Sorter Crate" then
+        return custom, true
     end
     return "Sorter Crate", false
 end

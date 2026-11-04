@@ -48,10 +48,12 @@ local function worldTable()
 end
 
 local function syncWorld()
-    if ModData.transmit then
-        -- Clients do not need this list to show a name (that is on the
-        -- crate). Transmitting it keeps a co-op host and a later client
-        -- from each inventing their own "Sorter 1".
+    -- getOrCreate's table is the one the save writes. In single player
+    -- isServer() is false, and ModData.transmit can replace that table
+    -- with an empty one. The next crate then suggests "Sorter 1" again
+    -- even though the placed crates still have their names.
+    -- A real server still transmits so co-op clients share one list.
+    if isServer and isServer() and ModData.transmit then
         pcall(function()
             ModData.transmit(Config.MOD_DATA_KEY)
         end)
@@ -73,16 +75,17 @@ function Data.isSorterObject(object)
     return Config.isSorterSpriteName(spriteNameOf(object))
 end
 
-local function copyRecord(record)
-    return {
-        schema = Config.SCHEMA,
-        id = record.id,
-        name = record.name,
-        nameConfirmed = record.nameConfirmed and true or false,
-        x = record.x,
-        y = record.y,
-        z = record.z,
-    }
+local function namedCrateCount(records)
+    local count = 0
+    if type(records) ~= "table" then
+        return 0
+    end
+    for _, record in pairs(records) do
+        if type(record) == "table" and not record.gone and type(record.name) == "string" then
+            count = count + 1
+        end
+    end
+    return count
 end
 
 -- First time we see a crate that has no record yet. The suggested name is
@@ -96,7 +99,9 @@ function Data.initNew(object)
     local world = worldTable()
     local id = tostring(world.nextId)
     world.nextId = world.nextId + 1
+    local alreadyNamed = namedCrateCount(world.sorters)
     local name = PZSorter.Names.nextFromRecords(world.sorters)
+    print("PZSorter: next name " .. name .. " with " .. tostring(alreadyNamed) .. " crates already named")
     local record = {
         schema = Config.SCHEMA,
         id = id,
@@ -109,8 +114,12 @@ function Data.initNew(object)
         y = square:getY(),
         z = square:getZ(),
     }
+    -- appliedName is the last name we wrote onto the container. It starts
+    -- as the suggestion, so a name the player types next is not mistaken
+    -- for a vanilla rename of this automatic one.
+    record.appliedName = name
     object:getModData()[Config.MOD_DATA_KEY] = record
-    world.sorters[id] = copyRecord(record)
+    PZSorter.Names.absorb(world.sorters, record)
     syncWorld()
     if object.transmitModData then
         -- The build action sends the object on its own. transmitModData only
@@ -144,15 +153,16 @@ function Data.remember(object)
     local world = worldTable()
     local id = tostring(record.id)
     local previous = world.sorters[id]
-    local updated = copyRecord(record)
+    PZSorter.Names.absorb(world.sorters, record)
+    local updated = world.sorters[id]
     local changed = type(previous) ~= "table"
+        or type(updated) ~= "table"
         or previous.name ~= updated.name
         or previous.x ~= updated.x
         or previous.y ~= updated.y
         or previous.z ~= updated.z
         or previous.nameConfirmed ~= updated.nameConfirmed
-        or previous.gone
-    world.sorters[id] = updated
+        or previous.gone ~= updated.gone
     -- Ids are handed out from nextId. A loaded crate must not make the next
     -- new crate reuse an id that is already on the map.
     local numericId = tonumber(record.id)
@@ -281,7 +291,7 @@ function Data.setName(player, args)
     record.name = name
     record.nameConfirmed = true
     local world = worldTable()
-    world.sorters[tostring(record.id)] = copyRecord(record)
+    PZSorter.Names.absorb(world.sorters, record)
     syncWorld()
     Data.applyContainerName(object)
     if object.transmitModData then
@@ -313,10 +323,18 @@ function Data.applyContainerName(object)
     local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
     local title = PZSorter.Names.containerTitle(record and record.name)
     local container = object:getContainer()
+    local wrote = false
     if container and container.setCustomName then
-        pcall(function()
+        local ok = pcall(function()
             container:setCustomName(title)
         end)
+        wrote = ok and true or false
+    end
+    -- Remember the write only when the container actually took it. If the
+    -- write did not happen, the previous appliedName is still the name a
+    -- refresh should ignore, not treat as a vanilla rename.
+    if wrote and type(record) == "table" then
+        record.appliedName = title
     end
 end
 
@@ -341,10 +359,18 @@ function Data.onBuilt(object, character)
         print("PZSorter: name already confirmed, no prompt")
         return
     end
-    -- Single player has no client/server split. Open the box in this state.
-    if Config.onPlayer() and PZSorter.NamePrompt and PZSorter.NamePrompt.onBuilt then
-        print("PZSorter: opening name box directly")
-        PZSorter.NamePrompt.onBuilt(object, character)
+    -- Single player has no client/server split, and sendServerCommand is
+    -- delivered in-process. Opening the box and also sending OpenName
+    -- shows the box twice. The player side opens it here and stops.
+    if Config.onPlayer() then
+        if PZSorter.NamePrompt and PZSorter.NamePrompt.onBuilt then
+            print("PZSorter: opening name box directly")
+            PZSorter.NamePrompt.onBuilt(object, character)
+        else
+            print("PZSorter: name prompt is not loaded")
+        end
+        print("PZSorter: not sending OpenName on the player side")
+        return
     end
     if not character or not sendServerCommand then
         print("PZSorter: no character or sendServerCommand, direct open only")
@@ -493,7 +519,7 @@ function Data.dismantleObject(player, object)
     removeObject(object)
     if record and record.id ~= nil then
         local world = worldTable()
-        world.sorters[tostring(record.id)] = { gone = true, id = tostring(record.id) }
+        PZSorter.Names.absorb(world.sorters, { gone = true, id = record.id })
         syncWorld()
     end
     print("PZSorter: dismantle finished")

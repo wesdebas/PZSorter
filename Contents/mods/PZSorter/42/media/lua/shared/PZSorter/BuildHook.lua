@@ -26,11 +26,14 @@ function PZSorter.OnSpriteCreate(params)
         return
     end
     local ok, err = pcall(function()
+        -- onBuilt opens the box itself on the player side. Calling the
+        -- prompt again here opened a second box for the same crate.
         if PZSorter.SorterData and PZSorter.SorterData.onBuilt then
             PZSorter.SorterData.onBuilt(object, character)
-        end
-        if PZSorter.NamePrompt and PZSorter.NamePrompt.onBuilt then
+        elseif PZSorter.NamePrompt and PZSorter.NamePrompt.onBuilt then
             PZSorter.NamePrompt.onBuilt(object, character)
+        else
+            print("PZSorter: placement hook found no handler")
         end
     end)
     if not ok then

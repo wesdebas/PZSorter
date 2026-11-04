@@ -62,7 +62,7 @@ git checkout feature/crate-and-naming
 git pull
 ```
 
-Enable **PZSorter** in the Mods menu, start a Sandbox game, and use the checklist in [docs/TESTING.md](docs/TESTING.md). The crate art says TEMP. It is a placeholder.
+Enable **PZSorter** in the Mods menu, start a Sandbox game, and use the checklist in [docs/TESTING.md](docs/TESTING.md). The final crate art is in. Facings 2 (W) and 3 (N) show the crate's back on purpose.
 
 The Lua tests run on GitHub for every pull request. You do not need to run them. From a machine with Lua 5.1 and busted they are `busted --helper=tests/helper.lua tests`.
 

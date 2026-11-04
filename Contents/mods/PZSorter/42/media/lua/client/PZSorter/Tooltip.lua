@@ -52,12 +52,15 @@ function Tooltip.titleFor(object)
     local record = recordOf(object)
     local container = object and object.getContainer and object:getContainer()
     local custom = container and container.getCustomName and container:getCustomName()
-    local title, adopt = PZSorter.Names.reconcile(record and record.name, custom)
+    local title, adopt = PZSorter.Names.reconcile(record and record.name, custom, record and record.appliedName)
     if adopt then
         print("PZSorter: keeping vanilla name " .. tostring(title))
         if record then
             record.name = title
             record.nameConfirmed = true
+            -- The container already shows this vanilla name. Remember that
+            -- we accepted it, so the next refresh does not treat it as new.
+            record.appliedName = title
         end
         if Config.onAuthority() and PZSorter.SorterData and PZSorter.SorterData.setName and object.getSquare then
             local square = object:getSquare()
@@ -82,9 +85,13 @@ function Tooltip.applyName(object)
     local container = object.getContainer and object:getContainer()
     local current = container and container.getCustomName and container:getCustomName()
     local title = Tooltip.titleFor(object)
+    local record = recordOf(object)
     -- Don't write the name back when it is already what the loot window shows.
     -- That was wiping a vanilla rename on the next open.
     if current == title then
+        if record and record.appliedName ~= title then
+            record.appliedName = title
+        end
         return
     end
     if object.setName then
@@ -96,6 +103,11 @@ function Tooltip.applyName(object)
         pcall(function()
             container:setCustomName(title)
         end)
+    end
+    -- This write is ours. A later refresh must not read it back as a
+    -- vanilla rename and throw away the name the player just typed.
+    if record then
+        record.appliedName = title
     end
 end
 

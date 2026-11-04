@@ -10,7 +10,7 @@ When this file and the project plan disagree, this file wins. The design spec st
 - The game build we target is the current stable Build 42, which is 42.21. `versionMin` stays `42.0` so the mod is Build 42 only, without pinning one patch.
 - Sorter range is a square. Distance is Chebyshev: the larger of the east-west gap and the north-south gap, in tiles. Diagonal counts the same as straight. The sandbox option is an integer from 20 to 30, default 20. The square covers the crate's floor, one floor above, and one floor below.
 - Dismantling gives back part of the planks and part of the screws, scaled by Carpentry the way vanilla furniture tables do. It always gives back the 1 Small Metal Sheet, at every skill.
-- The crate sprite in this branch is a temporary placeholder. The real sheet replaces the same files. See `docs/art/SPRITE-SPEC.md`.
+- The final crate art is in, in the same files the placeholder used. Facings 2 (W) and 3 (N) show the crate's back on purpose. See `docs/art/SPRITE-SPEC.md`. Do not redraw it with `tools/build_tiles.py --placeholders`.
 
 ## For later steps (do not build these yet)
 
