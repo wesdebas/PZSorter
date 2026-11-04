@@ -1,0 +1,5 @@
+{
+    "Sandbox_PZSorter": "PZSorter",
+    "Sandbox_PZSorter_SorterRange": "Sorter range",
+    "Sandbox_PZSorter_SorterRange_tooltip": "How far a Sorter Crate reaches, in tiles. The area is a square: this many tiles in any direction, including diagonally, on the crate's floor and one floor above and one floor below."
+}
