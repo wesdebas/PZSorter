@@ -14,6 +14,7 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 - A fridge/freezer combo is two rows. Each row is named from the container type, like "Fridge 1" or "Freezer 1".
 - **Open Sorter** on the crate opens a panel. Each linked container shows its name, how full it is, and a status dot. Green is in range, grey is out of range, red says "Missing" when that container is gone. Remove unassigns it. Linked containers glow while the panel is open, and hovering a row glows only that one.
 - Inside a safehouse, only members can assign or unassign. Outside a safehouse, anyone can.
+- Pick up a Sorter Crate from the move menu. It has to be empty. The item keeps the crate's name, id, and links, and placing it back does not ask for a name again. Containers it owns stay assigned while it is in your inventory.
 
 ## [0.1.0] - 2026-11-03
 

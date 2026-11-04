@@ -285,8 +285,12 @@ def build_tileset() -> Tileset:
                         "BlocksPlacement": "",
                         "CanBreak": "",
                         "ContainerCapacity": CAPACITY,
+                        "CustomItem": "PZSorter.SorterCrate",
                         "CustomName": "Sorter Crate",
                         "Facing": facing,
+                        "ForceSingleItem": "",
+                        "IsMoveAble": "",
+                        "PickUpWeight": "15",
                         "container": "crate",
                         "solid": "",
                     }

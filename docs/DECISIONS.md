@@ -16,6 +16,7 @@ When this file and the project plan disagree, this file wins. The design spec st
 
 - Outside a safehouse, anyone can use a sorter, the same way anyone can use a vanilla container. Inside a safehouse, only members can. The check is `SafeHouse.getSafeHouse` and `playerAllowed`. If that call is missing, the action is allowed and a console line says so.
 - A fridge/freezer combo is two rows, one for the fridge and one for the freezer. The row name comes from the container type plus a number, like "Fridge 1".
+- Picking up the crate uses the moveable item `PZSorter.SorterCrate`. The item keeps the name, id, and links. Placing it does not open the name box again. It has to be empty, the same as a vanilla container.
 
 ## For later steps (do not build these yet)
 

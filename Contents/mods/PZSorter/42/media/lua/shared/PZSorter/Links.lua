@@ -287,14 +287,19 @@ function Links.menuEntries(sorters, target, rangeTiles, ownerId)
     local nearby = {}
     if type(sorters) == "table" then
         for _, sorter in pairs(sorters) do
-            if type(sorter) == "table" and not sorter.gone and sorter.id ~= nil and sorter.x and sorter.y and sorter.z then
+            if type(sorter) == "table" and not sorter.gone and sorter.id ~= nil then
                 if ownerId ~= nil and tostring(sorter.id) == tostring(ownerId) then
                     owner = sorter
                 end
-                local horizontal = Range.chebyshev(sorter.x, sorter.y, target.x, target.y)
-                local floors = math.abs(sorter.z - target.z)
-                if horizontal <= Range.MAX and floors <= Range.FLOOR_SPAN then
-                    nearby[#nearby + 1] = sorter
+                -- A crate in somebody's inventory still owns its containers,
+                -- so Unassign can name it, but it is not standing on a tile
+                -- you can assign to.
+                if not sorter.carried and sorter.x and sorter.y and sorter.z then
+                    local horizontal = Range.chebyshev(sorter.x, sorter.y, target.x, target.y)
+                    local floors = math.abs(sorter.z - target.z)
+                    if horizontal <= Range.MAX and floors <= Range.FLOOR_SPAN then
+                        nearby[#nearby + 1] = sorter
+                    end
                 end
             end
         end

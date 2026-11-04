@@ -23,5 +23,6 @@
     "IGUI_PZSorter_Ok": "OK",
     "IGUI_PZSorter_NoSorters": "No sorter nearby",
     "IGUI_PZSorter_NoLinks": "No containers assigned yet.",
-    "IGUI_PZSorter_Safehouse": "Only safehouse members can use this sorter."
+    "IGUI_PZSorter_Safehouse": "Only safehouse members can use this sorter.",
+    "IGUI_PZSorter_PickupFull": "Empty the Sorter Crate before picking it up."
 }

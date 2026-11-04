@@ -71,10 +71,14 @@ def main() -> None:
             fail("cell %s is not a crate container" % index)
         if "CanBreak" not in props or "solid" not in props:
             fail("cell %s is missing CanBreak or solid" % index)
-        # A moveable pickup would bypass the crate's saved name. Step 1 does
-        # not set IsMoveAble on purpose.
-        if "IsMoveAble" in props:
-            fail("cell %s is marked moveable" % index)
+        # Pickup creates PZSorter.SorterCrate. Without IsMoveAble and
+        # CustomItem the move action plays and then creates no item.
+        if "IsMoveAble" not in props:
+            fail("cell %s is not moveable" % index)
+        if props.get("CustomItem") != "PZSorter.SorterCrate":
+            fail("cell %s CustomItem is %s" % (index, props.get("CustomItem")))
+        if "ForceSingleItem" not in props:
+            fail("cell %s is missing ForceSingleItem" % index)
 
     for index in range(len(FACING_ORDER), 64):
         if tileset.tiles[index].properties:

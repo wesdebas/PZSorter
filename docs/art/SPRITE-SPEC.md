@@ -111,7 +111,7 @@ The entity that places the crate is `Contents/mods/PZSorter/42/media/scripts/PZS
 | `BlocksPlacement` | (flag) | Another build cannot occupy the same square |
 | `solid` | (flag) | You walk around it, not through it |
 
-`IsMoveAble` is deliberately absent. A pickup would turn the crate into a generic moved item and drop the saved name. Dismantle is the way to take it apart in this step.
+`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item instead of a nameless moveable. The item carries the crate's saved name and links. `ForceSingleItem` keeps the four facings from being treated as one multi-tile object. Dismantle is still how you take it apart for materials.
 
 There is no `CanScrap`. Vanilla scrap returns whatever the material table says (nails, for wood), and it would not honour "always return the metal sheet". Dismantle is handled by our own menu.
 

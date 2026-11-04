@@ -79,3 +79,14 @@ Build two Sorter Crates a few tiles apart and name them, for example "Home" and 
 - [ ] Save, quit to the desktop, and load. The assignment is still there.
 - [ ] If you have a safehouse: a member can assign. Someone who is not a member gets "Only safehouse members can use this sorter." Outside a safehouse, anyone can. Skip this if the test save has no safehouse.
 - [ ] `console.txt` has no PZSorter errors. Lines that say the assign menu, `running Assign directly`, and `assigned` are expected. A grey sorter that still runs is a bug: the log would say `link refused, outside sorter range`.
+
+## Pickup
+
+The crate has to be empty. Vanilla pickup is the same menu you use on a chair or a crate that can be moved.
+
+- [ ] Put an item in the Sorter Crate. Pick it up. The crate stays, and you get a message to empty it. The log says `pickup refused, crate is not empty`.
+- [ ] Take the item out. Pick the crate up. It leaves the world and a Sorter Crate item is in your inventory. The log says `pickup stored name=` and the link count.
+- [ ] While it is in your inventory, a container it owned still offers Unassign from that name, and does not offer Assign to that same crate.
+- [ ] Place the item somewhere else, and rotate the facing if the cursor lets you. The name box does not open. The log says `place restored name=` with the same name and the same link count.
+- [ ] Open Sorter. The header is the old name. The rows are the same containers. One that is now outside the sandbox square has a grey Out of range dot, not Missing.
+- [ ] Save, quit to the desktop, and load. The name, the rows, and the dots are still right.

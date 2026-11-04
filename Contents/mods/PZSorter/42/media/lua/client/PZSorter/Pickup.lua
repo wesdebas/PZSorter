@@ -1,0 +1,376 @@
+-- Vanilla pickup and place for the Sorter Crate.
+--
+-- IsMoveAble plus CustomItem = PZSorter.SorterCrate is what makes the
+-- move action create an item. Before that, the animation ran and then
+-- created nothing, and the crate stayed where it was. This file copies
+-- the saved name and links onto that item, and writes them back when the
+-- item is placed. The name box stays closed because the restored record
+-- is already confirmed.
+
+require "PZSorter/Config"
+require "PZSorter/Carry"
+require "PZSorter/CarryFind"
+require "PZSorter/Names"
+
+PZSorter = PZSorter or {}
+PZSorter.Pickup = PZSorter.Pickup or {}
+
+local Pickup = PZSorter.Pickup
+local Config = PZSorter.Config
+local Carry = PZSorter.Carry
+local Find = PZSorter.CarryFind
+
+if Pickup._hooked then
+    return Pickup
+end
+
+local function spriteNameOf(object)
+    if not object or not object.getSprite then
+        return nil
+    end
+    local ok, sprite = pcall(function()
+        return object:getSprite()
+    end)
+    if not ok or not sprite or not sprite.getName then
+        return nil
+    end
+    local named, name = pcall(function()
+        return sprite:getName()
+    end)
+    if named then
+        return name
+    end
+    return nil
+end
+
+local function isSorterObject(object)
+    return Config.isSorterSpriteName(spriteNameOf(object))
+end
+
+local function sorterOnSquare(square)
+    if not square or not square.getObjects then
+        return nil
+    end
+    local objects = square:getObjects()
+    for i = 0, objects:size() - 1 do
+        local object = objects:get(i)
+        if isSorterObject(object) then
+            return object
+        end
+    end
+    return nil
+end
+
+local function objectStillThere(square, object)
+    if not square or not square.getObjects or not object then
+        return false
+    end
+    local objects = square:getObjects()
+    for i = 0, objects:size() - 1 do
+        if objects:get(i) == object then
+            return true
+        end
+    end
+    return false
+end
+
+local function itemCount(object)
+    if not object or not object.getContainer then
+        return 0
+    end
+    local ok, container = pcall(function()
+        return object:getContainer()
+    end)
+    if not ok or not container then
+        return 0
+    end
+    if container.getItems then
+        local listed, items = pcall(function()
+            return container:getItems()
+        end)
+        if listed and items and items.size then
+            return items:size()
+        end
+    end
+    if container.isEmpty then
+        local emptyOk, empty = pcall(function()
+            return container:isEmpty()
+        end)
+        if emptyOk and not empty then
+            return 1
+        end
+    end
+    return 0
+end
+
+local function halo(player)
+    if player and player.setHaloNote and getText then
+        pcall(function()
+            player:setHaloNote(getText("IGUI_PZSorter_PickupFull"))
+        end)
+    end
+end
+
+local function recordOf(object)
+    if not object or not object.getModData then
+        return nil
+    end
+    local modData = object:getModData()
+    if type(modData) ~= "table" then
+        return nil
+    end
+    local record = modData[Config.MOD_DATA_KEY]
+    if type(record) ~= "table" or record.id == nil then
+        return nil
+    end
+    return record
+end
+
+local function looksLikePlayer(value)
+    return value and value.getInventory and (value.getCurrentSquare or value.getPlayerNum)
+end
+
+local function looksLikeSquare(value)
+    return value and value.getObjects and value.getX and not value.getInventory
+end
+
+local function describeArgs(...)
+    local object, player, square, item = nil, nil, nil, nil
+    for i = 1, select("#", ...) do
+        local value = select(i, ...)
+        if type(value) == "userdata" or type(value) == "table" then
+            if not object and isSorterObject(value) then
+                object = value
+            elseif not item and value.getModData and value.getFullType then
+                local ok, fullType = pcall(function()
+                    return value:getFullType()
+                end)
+                if ok and fullType == "PZSorter.SorterCrate" then
+                    item = value
+                end
+            elseif not player and looksLikePlayer(value) then
+                player = value
+            elseif not square and looksLikeSquare(value) then
+                square = value
+            end
+        end
+    end
+    if not object and square then
+        object = sorterOnSquare(square)
+    end
+    if not square and object and object.getSquare then
+        local ok, found = pcall(function()
+            return object:getSquare()
+        end)
+        if ok then
+            square = found
+        end
+    end
+    if not player and getSpecificPlayer then
+        player = getSpecificPlayer(0)
+    end
+    return object, player, square, item
+end
+
+local function markCarried(player, packed)
+    local item = Find.findFresh(player)
+    if not item then
+        print("PZSorter: pickup did not create an item")
+        return false
+    end
+    Find.write(item, packed)
+    if PZSorter.SorterData and PZSorter.SorterData.getWorld then
+        local world = PZSorter.SorterData.getWorld()
+        local id = tostring(packed.id)
+        world.sorters = world.sorters or {}
+        world.sorters[id] = Carry.asCarried(world.sorters[id], packed)
+        if isServer and isServer() and ModData and ModData.transmit then
+            pcall(function()
+                ModData.transmit(Config.MOD_DATA_KEY)
+            end)
+        end
+    end
+    local count = packed.links and #packed.links or 0
+    print("PZSorter: pickup stored name=" .. tostring(packed.name) .. " links=" .. tostring(count))
+    return true
+end
+
+local function applyPlace(square, packed)
+    local object = sorterOnSquare(square)
+    if not object then
+        print("PZSorter: place found no crate on the square")
+        return
+    end
+    local existing = recordOf(object)
+    if existing and tostring(existing.id) == tostring(packed.id) then
+        return
+    end
+    local record = Carry.restore(packed, square:getX(), square:getY(), square:getZ())
+    object:getModData()[Config.MOD_DATA_KEY] = record
+    if PZSorter.SorterData and PZSorter.SorterData.getWorld then
+        local world = PZSorter.SorterData.getWorld()
+        PZSorter.Names.absorb(world.sorters, record)
+    end
+    if PZSorter.SorterData and PZSorter.SorterData.applyContainerName then
+        PZSorter.SorterData.applyContainerName(object)
+    end
+    if object.transmitModData then
+        pcall(function()
+            object:transmitModData()
+        end)
+    end
+end
+
+local function wrapPickup(methodName)
+    local old = ISMoveableSpriteProps[methodName]
+    if type(old) ~= "function" then
+        return false
+    end
+    ISMoveableSpriteProps[methodName] = function(self, ...)
+        local object, player, square = describeArgs(...)
+        if object and not Carry.canPickUp(itemCount(object)) then
+            print("PZSorter: pickup refused, crate is not empty (" .. tostring(itemCount(object)) .. ")")
+            halo(player)
+            return
+        end
+        local packed = nil
+        if object then
+            local record = recordOf(object)
+            if record then
+                packed = Carry.pack(record)
+                print("PZSorter: pickup started name=" .. tostring(record.name) .. " links=" .. tostring(#packed.links))
+            else
+                print("PZSorter: pickup started with no saved record")
+            end
+        end
+        local result = old(self, ...)
+        if packed then
+            if object and objectStillThere(square, object) then
+                print("PZSorter: pickup left the crate in the world")
+            else
+                markCarried(player, packed)
+            end
+        end
+        return result
+    end
+    return true
+end
+
+local function wrapPlace(methodName)
+    local old = ISMoveableSpriteProps[methodName]
+    if type(old) ~= "function" then
+        return false
+    end
+    ISMoveableSpriteProps[methodName] = function(self, ...)
+        local _, player, square, item = describeArgs(...)
+        if not item and player and player.getPrimaryHandItem then
+            local ok, hand = pcall(function()
+                return player:getPrimaryHandItem()
+            end)
+            if ok and hand and hand.getFullType and hand:getFullType() == "PZSorter.SorterCrate" then
+                item = hand
+            end
+        end
+        if not item and player and player.getSecondaryHandItem then
+            local ok, hand = pcall(function()
+                return player:getSecondaryHandItem()
+            end)
+            if ok and hand and hand.getFullType and hand:getFullType() == "PZSorter.SorterCrate" then
+                item = hand
+            end
+        end
+        local packed = nil
+        if item and item.getModData then
+            local ok, modData = pcall(function()
+                return item:getModData()
+            end)
+            if ok and type(modData) == "table" then
+                local saved = modData[Config.MOD_DATA_KEY]
+                if type(saved) == "table" and saved.id ~= nil then
+                    packed = saved
+                end
+            end
+        end
+        if packed then
+            -- initNew consumes this if the object is added during place.
+            Carry.pending = Carry.pack(packed)
+            print("PZSorter: place starting name=" .. tostring(packed.name))
+        end
+        local result = old(self, ...)
+        if Carry.pending then
+            local restored = Carry.pending
+            if square then
+                applyPlace(square, restored)
+                local count = restored.links and #restored.links or 0
+                print("PZSorter: place restored name=" .. tostring(restored.name) .. " links=" .. tostring(count))
+            else
+                print("PZSorter: place had no square, saved record was not applied")
+            end
+            Carry.pending = nil
+        end
+        return result
+    end
+    return true
+end
+
+local function install()
+    if Pickup._hooked then
+        return
+    end
+    if not ISMoveableSpriteProps then
+        print("PZSorter: ISMoveableSpriteProps not loaded yet")
+        return
+    end
+    Pickup._hooked = true
+    local pickupName = nil
+    if type(ISMoveableSpriteProps.pickUpMoveable) == "function" then
+        pickupName = "pickUpMoveable"
+    elseif type(ISMoveableSpriteProps.pickUpMoveableViaCursor) == "function" then
+        pickupName = "pickUpMoveableViaCursor"
+    end
+    local placeName = nil
+    if type(ISMoveableSpriteProps.placeMoveable) == "function" then
+        placeName = "placeMoveable"
+    elseif type(ISMoveableSpriteProps.placeMoveableInternal) == "function" then
+        placeName = "placeMoveableInternal"
+    elseif type(ISMoveableSpriteProps.placeMoveableViaCursor) == "function" then
+        placeName = "placeMoveableViaCursor"
+    end
+    local pickupWrapped = pickupName and wrapPickup(pickupName)
+    local placeWrapped = placeName and wrapPlace(placeName)
+    print("PZSorter: pickup hook installed pickup=" .. tostring(pickupName) .. " place=" .. tostring(placeName) .. " wrapped=" .. tostring(pickupWrapped and placeWrapped))
+
+    if ISMoveablesAction and type(ISMoveablesAction.isValid) == "function" and not ISMoveablesAction._PZSorterPickup then
+        ISMoveablesAction._PZSorterPickup = true
+        local oldValid = ISMoveablesAction.isValid
+        function ISMoveablesAction:isValid()
+            local mode = self.mode
+            if mode == "pickup" then
+                local object = self.object or self.srcObj
+                if not object and self.square then
+                    object = sorterOnSquare(self.square)
+                end
+                local sprite = self.moveProps and (self.moveProps.spriteName or self.moveProps.sprite or self.moveProps.name)
+                local ours = (object and isSorterObject(object)) or Config.isSorterSpriteName(sprite)
+                if ours and object and not Carry.canPickUp(itemCount(object)) then
+                    if not self._pzSorterTold then
+                        self._pzSorterTold = true
+                        print("PZSorter: pickup refused, crate is not empty (" .. tostring(itemCount(object)) .. ")")
+                        halo(self.character)
+                    end
+                    return false
+                end
+            end
+            return oldValid(self)
+        end
+    end
+end
+
+if Events and Events.OnGameStart then
+    Events.OnGameStart.Add(install)
+end
+install()
+
+print("PZSorter: pickup loaded (0.2.0)")
+
+return Pickup

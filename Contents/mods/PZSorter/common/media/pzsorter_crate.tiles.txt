@@ -12,8 +12,12 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
+        CustomItem = PZSorter.SorterCrate
         CustomName = Sorter Crate
         Facing = E
+        ForceSingleItem =
+        IsMoveAble =
+        PickUpWeight = 15
         container = crate
         solid =
     }
@@ -24,8 +28,12 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
+        CustomItem = PZSorter.SorterCrate
         CustomName = Sorter Crate
         Facing = S
+        ForceSingleItem =
+        IsMoveAble =
+        PickUpWeight = 15
         container = crate
         solid =
     }
@@ -36,8 +44,12 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
+        CustomItem = PZSorter.SorterCrate
         CustomName = Sorter Crate
         Facing = W
+        ForceSingleItem =
+        IsMoveAble =
+        PickUpWeight = 15
         container = crate
         solid =
     }
@@ -48,8 +60,12 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
+        CustomItem = PZSorter.SorterCrate
         CustomName = Sorter Crate
         Facing = N
+        ForceSingleItem =
+        IsMoveAble =
+        PickUpWeight = 15
         container = crate
         solid =
     }

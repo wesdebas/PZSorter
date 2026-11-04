@@ -11,6 +11,7 @@ require "PZSorter/Links"
 require "PZSorter/WorldContainers"
 require "PZSorter/Access"
 require "PZSorter/SorterData"
+require "PZSorter/CarryFind"
 
 PZSorter = PZSorter or {}
 PZSorter.Commands = PZSorter.Commands or {}
@@ -359,7 +360,30 @@ function Commands.unassign(player, args)
         end
         transmit(sorterObject)
     else
-        print("PZSorter: unassign found no sorter, clearing the container only")
+        -- The crate is in the inventory. The link lives on the item, and
+        -- the containers still carry this sorter id until Unassign.
+        local item, packed = nil, nil
+        if PZSorter.CarryFind and PZSorter.CarryFind.find then
+            item, packed = PZSorter.CarryFind.find(args.sorterId)
+        end
+        if packed and PZSorter.Carry and PZSorter.Carry.dropLink then
+            local removed, reason = PZSorter.Carry.dropLink(packed, spot)
+            if item then
+                PZSorter.CarryFind.write(item, packed)
+            end
+            local world = worldTable()
+            local saved = world and world.sorters and world.sorters[tostring(args.sorterId)]
+            if type(saved) == "table" then
+                saved.links = packed.links
+            end
+            if removed then
+                print("PZSorter: unassigned " .. tostring(removed.name) .. " from carried " .. tostring(packed.name))
+            else
+                print("PZSorter: unassign found no carried link (" .. tostring(reason) .. ")")
+            end
+        else
+            print("PZSorter: unassign found no sorter, clearing the container only")
+        end
     end
     if containerSquare then
         local row = World.find(containerSquare, spot.index)
