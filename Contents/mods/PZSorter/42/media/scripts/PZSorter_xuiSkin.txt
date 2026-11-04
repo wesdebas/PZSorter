@@ -1,0 +1,21 @@
+/* The build menu asks the default skin for this name and icon.
+   Without the block, 42.21 logs
+   "XuiSkin.getEntityUiStyle > Cannot find entity ui info: ES_PZSorter_SorterCrate"
+   and the entry has no name to search for.
+   The skin has to be module Base. A skin in our own module is ignored.
+   DisplayName is the Entity.json key, so the button reads "Sorter Crate".
+*/
+
+module Base
+{
+    xuiSkin default
+    {
+        entity ES_PZSorter_SorterCrate
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_PZSorter_SorterCrate,
+            Icon = default,
+            BuildDescription = Tooltip_PZSorter_SorterCrate,
+        }
+    }
+}

@@ -40,8 +40,17 @@ Dismantle needs a **hammer and a saw** (a hacksaw is fine). Building needs a ham
 
 Planks and screws only sometimes come back. At Carpentry 1 that is often very little. The Small Metal Sheet comes back every time.
 
+## Where to find it
+
+Open **Build** (the menu for objects you place in the world). It is not in the item crafting menu.
+
+Search for **Sorter**. It is listed as **Sorter Crate**, under **Carpentry**, in the **Furniture** category. With no materials or no Carpentry 1 it is greyed out, but the search still finds it.
+
+If the search finds nothing, check `console.txt` for `Cannot find entity ui info: ES_PZSorter_SorterCrate`. That line means the build-menu name did not load.
+
 ## Checklist
 
+- [ ] Search the build menu for "Sorter". Sorter Crate is there, under Carpentry, Furniture.
 - [ ] Without the materials or without Carpentry 1, the Sorter Crate recipe is greyed out. It is on the Furniture page.
 - [ ] With 4 Planks, 10 Screws, 1 Small Metal Sheet, a Hammer, a Screwdriver, and Carpentry 1, build the crate. The hammer and the screwdriver are still in your inventory. The materials are gone.
 - [ ] The name box shows "Sorter 1". Try an empty name. Try a 25-character name. Both stay in the box and tell you why. Then accept a normal name.

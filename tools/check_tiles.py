@@ -38,6 +38,7 @@ from pztile import decode_pack, decode_tiles  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 MOD_INFO = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "mod.info"
 ENTITY = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "media" / "scripts" / "PZSorter_entities.txt"
+XUI = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "media" / "scripts" / "PZSorter_xuiSkin.txt"
 SANDBOX = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "media" / "sandbox-options.txt"
 CONFIG = ROOT / "Contents" / "mods" / "PZSorter" / "42" / "media" / "lua" / "shared" / "PZSorter" / "Config.lua"
 
@@ -130,6 +131,30 @@ def main() -> None:
             fail("mod.info is missing %s" % line)
 
     entity = ENTITY.read_text(encoding="utf-8")
+    # Vanilla chair and window (42.21 dumps) use these exact recipe fields.
+    # Item tags are namespaced (base:hammer). The build-menu tags are not.
+    for line in (
+        "category = Furniture,",
+        "Tags = Carpentry;Furniture,",
+        "Tooltip = Tooltip_PZSorter_SorterCrate,",
+        "entityStyle = ES_PZSorter_SorterCrate,",
+        "tags[base:hammer]",
+        "tags[base:screwdriver]",
+    ):
+        if line not in entity:
+            fail("entity script is missing %s" % line)
+    if "ToolTip =" in entity:
+        fail("entity script uses ToolTip; 42.21 ignores that spelling")
+    skin = XUI.read_text(encoding="utf-8")
+    for line in (
+        "module Base",
+        "xuiSkin default",
+        "entity ES_PZSorter_SorterCrate",
+        "DisplayName = EC_PZSorter_SorterCrate,",
+        "LuaWindowClass = ISEntityWindow,",
+    ):
+        if line not in skin:
+            fail("xui skin is missing %s" % line)
     for index, facing in enumerate(FACING_ORDER):
         needle = "row = %s" % sprite_name(index)
         if needle not in entity:

@@ -1,3 +1,10 @@
+/* Recipe tags match the vanilla wooden chair and wooden window on 42.21:
+   Tags = Carpentry;Furniture and category = Furniture.
+   Carpentry is the build section. Furniture is the list inside it.
+   base:hammer is only the item tag on an input. The recipe tags are not
+   written as base:carpentry. Tooltip (not ToolTip) is the 42.21 field.
+*/
+
 module PZSorter
 {
     entity SorterCrate

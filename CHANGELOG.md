@@ -7,6 +7,10 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-11-03
 
+### Fixed
+
+- The Sorter Crate shows up in the build menu. The menu needs an entity style (`ES_PZSorter_SorterCrate`) for the name and icon. Search for "Sorter" under Carpentry, Furniture.
+
 ### Added
 
 - A Sorter Crate you can build from the Furniture page once you have Carpentry 1, 4 Planks, 10 Screws, 1 Small Metal Sheet, a Hammer, and a Screwdriver. The tools are not used up. The crate holds 50.
