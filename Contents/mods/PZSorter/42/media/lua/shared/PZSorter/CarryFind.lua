@@ -126,13 +126,11 @@ function Find.write(item, packed)
         return
     end
     item:getModData()[Config.MOD_DATA_KEY] = packed
-    if packed.name then
+    if type(packed.name) == "string" then
         PZSorter.Carry.nameItem(item, packed.name)
     end
-    if item.transmitModData then
-        pcall(function()
-            item:transmitModData()
-        end)
+    if type(item.transmitModData) == "function" then
+        item:transmitModData()
     end
 end
 

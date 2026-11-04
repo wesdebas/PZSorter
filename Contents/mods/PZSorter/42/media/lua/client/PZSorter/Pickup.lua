@@ -296,6 +296,19 @@ local function endPlace(square, outer)
     if placeDepth > 0 then
         placeDepth = placeDepth - 1
     end
+    if outer and square then
+        local object = sorterOnSquare(square)
+        local sprite = object and spriteNameOf(object)
+        if sprite then
+            local facing = "?"
+            for letter, name in pairs(Config.FACINGS) do
+                if name == sprite then
+                    facing = letter
+                end
+            end
+            print("PZSorter: place facing=" .. facing .. " sprite=" .. sprite)
+        end
+    end
 end
 
 local function wrapPickup(methodName)

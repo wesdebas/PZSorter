@@ -13,9 +13,9 @@ tileset
         CanBreak =
         ContainerCapacity = 50
         CustomItem = PZSorter.SorterCrate
-        CustomName = Sorter Crate
+        CustomName = Crate
         Facing = E
-        ForceSingleItem =
+        GroupName = Sorter
         IsMoveAble =
         PickUpWeight = 15
         container = crate
@@ -29,9 +29,9 @@ tileset
         CanBreak =
         ContainerCapacity = 50
         CustomItem = PZSorter.SorterCrate
-        CustomName = Sorter Crate
+        CustomName = Crate
         Facing = S
-        ForceSingleItem =
+        GroupName = Sorter
         IsMoveAble =
         PickUpWeight = 15
         container = crate
@@ -45,9 +45,9 @@ tileset
         CanBreak =
         ContainerCapacity = 50
         CustomItem = PZSorter.SorterCrate
-        CustomName = Sorter Crate
+        CustomName = Crate
         Facing = W
-        ForceSingleItem =
+        GroupName = Sorter
         IsMoveAble =
         PickUpWeight = 15
         container = crate
@@ -61,9 +61,9 @@ tileset
         CanBreak =
         ContainerCapacity = 50
         CustomItem = PZSorter.SorterCrate
-        CustomName = Sorter Crate
+        CustomName = Crate
         Facing = N
-        ForceSingleItem =
+        GroupName = Sorter
         IsMoveAble =
         PickUpWeight = 15
         container = crate

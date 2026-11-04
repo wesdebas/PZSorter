@@ -1,9 +1,9 @@
 /* The item vanilla pickup creates for a Sorter Crate.
    The tile property CustomItem is PZSorter.SorterCrate, this item.
-   WorldObjectSprite is the east face. The other three faces are the
-   same CustomItem with Facing S, W and N, so the place cursor can rotate.
-   Weight is what a CustomItem pickup uses. Icon is the build-menu texture,
-   which is a real file. "default" is not.
+   WorldObjectSprite is the east face. The tile faces share GroupName
+   Sorter and CustomName Crate, with Facing E, S, W, and N, so the
+   place cursor can rotate. Weight is what a CustomItem pickup uses.
+   Icon is the build-menu texture, which is a real file. "default" is not.
 */
 
 module PZSorter

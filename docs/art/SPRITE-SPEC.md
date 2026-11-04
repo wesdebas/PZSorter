@@ -105,13 +105,14 @@ The entity that places the crate is `Contents/mods/PZSorter/42/media/scripts/PZS
 |---|---|---|
 | `container` | `crate` | Loot icon and container behaviour |
 | `ContainerCapacity` | `50` | The 50 capacity. The chunk loader reads this. A Lua-only capacity resets on reload (HydeCo, "Containers") |
-| `CustomName` | `Sorter Crate` | Fallback label before the player's name is applied |
+| `CustomName` | `Crate` | The noun. With GroupName, the moveable label is "Sorter Crate" |
+| `GroupName` | `Sorter` | Same on all four cells, so rotation finds the sibling facings |
 | `Facing` | `E`, `S`, `W`, or `N` | Which way this cell points |
 | `CanBreak` | (flag, no value) | A sledge can break it, like other crates |
 | `BlocksPlacement` | (flag) | Another build cannot occupy the same square |
 | `solid` | (flag) | You walk around it, not through it |
 
-`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item instead of a nameless moveable. The item carries the crate's saved name and links. `ForceSingleItem` keeps the four facings from being treated as one multi-tile object. Dismantle is still how you take it apart for materials.
+`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item. `GroupName` is `Sorter` and `CustomName` is `Crate` on all four cells, with `Facing` of E, S, W, or N. The place cursor groups those four by that shared name and rotates between them. `ForceSingleItem` is not set. The item still carries the crate's saved name and links. Dismantle is how you take it apart for materials.
 
 There is no `CanScrap`. Vanilla scrap returns whatever the material table says (nails, for wood), and it would not honour "always return the metal sheet". Dismantle is handled by our own menu.
 

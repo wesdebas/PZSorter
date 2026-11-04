@@ -28,20 +28,21 @@ local function copyValue(value)
     return out
 end
 
--- 42.21 InventoryItem:setCustomName takes the name and nothing else.
--- item:setCustomName(true, name) is "expected 1 argument, got 2". Debug
--- mode shows that Java error even when the call sits inside pcall, so the
--- call itself has to be the one-argument form. setName is the same shape.
+-- InventoryItem in 42.21: setName takes the string. setCustomName takes
+-- only a boolean, "this item has a custom name". Passing the name there
+-- is "expected argument of type boolean, got String", and debug mode
+-- shows that even inside pcall. ItemContainer:setCustomName is the
+-- opposite: it takes the title string. This function is only for the item.
 function Carry.nameItem(item, name)
-    if not item or type(name) ~= "string" then
-        return
+    if not item or type(name) ~= "string" or name == "" then
+        return false
     end
-    if item.setName then
-        item:setName(name)
+    if type(item.setName) ~= "function" or type(item.setCustomName) ~= "function" then
+        return false
     end
-    if item.setCustomName then
-        item:setCustomName(name)
-    end
+    item:setName(name)
+    item:setCustomName(true)
+    return true
 end
 
 local function copyLink(link)

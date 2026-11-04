@@ -77,8 +77,12 @@ def main() -> None:
             fail("cell %s is not moveable" % index)
         if props.get("CustomItem") != "PZSorter.SorterCrate":
             fail("cell %s CustomItem is %s" % (index, props.get("CustomItem")))
-        if "ForceSingleItem" not in props:
-            fail("cell %s is missing ForceSingleItem" % index)
+        if props.get("CustomName") != "Crate":
+            fail("cell %s CustomName is %s" % (index, props.get("CustomName")))
+        if props.get("GroupName") != "Sorter":
+            fail("cell %s GroupName is %s" % (index, props.get("GroupName")))
+        if "ForceSingleItem" in props:
+            fail("cell %s is ForceSingleItem, so the place cursor will not rotate it" % index)
 
     for index in range(len(FACING_ORDER), 64):
         if tileset.tiles[index].properties:

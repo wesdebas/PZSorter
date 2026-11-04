@@ -28,20 +28,26 @@ local function record()
 end
 
 describe("picked up sorter crate", function()
-    it("names the carried item with one argument, the 42.21 shape", function()
-        local function oneArgument(label)
-            return function(self, ...)
-                assert.are.equal(1, select("#", ...), label .. " expected 1 argument, got " .. tostring(select("#", ...)))
-                assert.are.equal("Home", (...))
-            end
-        end
+    it("names an inventory item with setName(string) and setCustomName(true)", function()
+        -- InventoryItem:setCustomName is boolean-only in 42.21. A string
+        -- argument is the error screen from pickup.
+        local names = {}
+        local flags = {}
         local item = {
-            setName = oneArgument("setName"),
-            setCustomName = oneArgument("setCustomName"),
+            setName = function(self, value)
+                assert.are.equal("string", type(value))
+                names[#names + 1] = value
+            end,
+            setCustomName = function(self, value)
+                assert.are.equal("boolean", type(value))
+                flags[#flags + 1] = value
+            end,
         }
-        Carry.nameItem(item, "Home")
-        Carry.nameItem(item, nil)
-        Carry.nameItem(nil, "Home")
+        assert.is_true(Carry.nameItem(item, "Home"))
+        assert.are.same({ "Home" }, names)
+        assert.are.same({ true }, flags)
+        assert.is_false(Carry.nameItem(item, ""))
+        assert.is_false(Carry.nameItem(nil, "Home"))
     end)
 
     it("refuses pickup when the crate still holds items", function()

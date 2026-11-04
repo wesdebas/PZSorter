@@ -87,6 +87,6 @@ The crate has to be empty. Vanilla pickup is the same menu you use on a chair or
 - [ ] Put an item in the Sorter Crate. Pick it up. The crate stays, and you get a message to empty it. The log says `pickup refused, crate is not empty`.
 - [ ] Take the item out. Pick the crate up. It leaves the world and a Sorter Crate item is in your inventory. The log says `pickup stored name=` and the link count.
 - [ ] While it is in your inventory, a container it owned still offers Unassign from that name, and does not offer Assign to that same crate.
-- [ ] Place the item somewhere else, and rotate the facing if the cursor lets you. The name box does not open. The log says `place restored name=` with the same name and the same link count.
+- [ ] Place the item somewhere else. Press R (or the controller rotate) before you click. The cursor cycles East, South, West, and North, and the placed crate uses that sprite. The log says `place facing=N sprite=pzsorter_crate_01_3` for north, and the matching sprite for the other three. The name box does not open. The log also says `place restored name=` with the same name and the same link count.
 - [ ] Open Sorter. The header is the old name. The rows are the same containers. One that is now outside the sandbox square has a grey Out of range dot, not Missing.
 - [ ] Save, quit to the desktop, and load. The name, the rows, and the dots are still right.

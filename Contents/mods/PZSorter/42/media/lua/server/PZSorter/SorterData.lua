@@ -352,12 +352,13 @@ function Data.applyContainerName(object)
     local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
     local title = PZSorter.Names.containerTitle(record and record.name)
     local container = object:getContainer()
+    -- ItemContainer:setCustomName takes the title string. That is what the
+    -- loot window reads back with getCustomName. An InventoryItem uses
+    -- setName plus setCustomName(true) instead, and must not be called here.
     local wrote = false
-    if container and container.setCustomName then
-        local ok = pcall(function()
-            container:setCustomName(title)
-        end)
-        wrote = ok and true or false
+    if container and type(container.setCustomName) == "function" and type(title) == "string" then
+        container:setCustomName(title)
+        wrote = true
     end
     -- Remember the write only when the container actually took it. If the
     -- write did not happen, the previous appliedName is still the name a
