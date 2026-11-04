@@ -27,6 +27,7 @@ from build_tiles import (  # noqa: E402
     TILESET_INDEX,
     TILESET_NAME,
     TILES_PATH,
+    face_offsets,
     face_path,
     sheet_path,
     sprite_name,
@@ -83,6 +84,16 @@ def main() -> None:
             fail("cell %s GroupName is %s" % (index, props.get("GroupName")))
         if "ForceSingleItem" in props:
             fail("cell %s is ForceSingleItem, so the place cursor will not rotate it" % index)
+        # getFaces() builds pzsorter_crate_01_<spriteID + offset>. Missing
+        # offsets make hasFaces() false, so R never changes the ghost.
+        expected_offsets = face_offsets(facing)
+        for key, value in expected_offsets.items():
+            if props.get(key) != value:
+                fail("cell %s %s is %s, expected %s" % (index, key, props.get(key), value))
+        for other in ("N", "W", "S", "E"):
+            key = "%soffset" % other
+            if other != facing and key not in expected_offsets:
+                fail("cell %s missing computed %s" % (index, key))
 
     for index in range(len(FACING_ORDER), 64):
         if tileset.tiles[index].properties:

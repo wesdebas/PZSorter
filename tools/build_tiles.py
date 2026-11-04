@@ -53,11 +53,24 @@ TILESET_NAME = "pzsorter_crate_01"
 # Inside the .tiles file this must be 1..512. It is NOT the mod.info number.
 TILESET_INDEX = 1
 
-# Order is the build-menu rotation order the entity script uses.
-# East, then South, then West, then North. Confirmed in game.
-# See SPRITE-SPEC.
-FACING_ORDER = ("E", "S", "W", "N")
+# Sprite index on the sheet: 0 East, 1 South, 2 West, 3 North.
+# ISMoveableSpriteProps:getFaces() does not search by GroupName. It adds
+# spriteID + Noffset/Woffset/Soffset/Eoffset. hasFaces() is false when every
+# offset is 0, so the place cursor never rotates and always keeps the east
+# WorldObjectSprite.
+FACE_INDEX = {"N": 3, "W": 2, "S": 1, "E": 0}
 
+
+def face_offsets(facing: str) -> dict[str, str]:
+    own = FACE_INDEX[facing]
+    offsets = {}
+    for face, index in FACE_INDEX.items():
+        if face == facing:
+            continue
+        offsets["%soffset" % face] = str(index - own)
+    return offsets
+
+FACING_ORDER = ("E", "S", "W", "N")
 CAPACITY = "50"
 PAGE_SIZE = 1024
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -279,23 +292,21 @@ def build_tileset() -> Tileset:
             facing = FACING_ORDER[index]
             # Empty values are flags. TileZed writes "CanBreak =" with nothing
             # after the equals sign, and the game treats that as "yes".
-            tiles.append(
-                TileDef(
-                    {
-                        "BlocksPlacement": "",
-                        "CanBreak": "",
-                        "ContainerCapacity": CAPACITY,
-                        "CustomItem": "PZSorter.SorterCrate",
-                        "CustomName": "Crate",
-                        "Facing": facing,
-                        "GroupName": "Sorter",
-                        "IsMoveAble": "",
-                        "PickUpWeight": "15",
-                        "container": "crate",
-                        "solid": "",
-                    }
-                )
-            )
+            props = {
+                "BlocksPlacement": "",
+                "CanBreak": "",
+                "ContainerCapacity": CAPACITY,
+                "CustomItem": "PZSorter.SorterCrate",
+                "CustomName": "Crate",
+                "Facing": facing,
+                "GroupName": "Sorter",
+                "IsMoveAble": "",
+                "PickUpWeight": "15",
+                "container": "crate",
+                "solid": "",
+            }
+            props.update(face_offsets(facing))
+            tiles.append(TileDef(props))
         else:
             tiles.append(TileDef({}))
     return Tileset(

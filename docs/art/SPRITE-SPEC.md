@@ -112,7 +112,7 @@ The entity that places the crate is `Contents/mods/PZSorter/42/media/scripts/PZS
 | `BlocksPlacement` | (flag) | Another build cannot occupy the same square |
 | `solid` | (flag) | You walk around it, not through it |
 
-`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item. `GroupName` is `Sorter` and `CustomName` is `Crate` on all four cells, with `Facing` of E, S, W, or N. The place cursor groups those four by that shared name and rotates between them. `ForceSingleItem` is not set. The item still carries the crate's saved name and links. Dismantle is how you take it apart for materials.
+`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item. Rotation does not search `GroupName`. `ISMoveableSpriteProps:getFaces()` adds `spriteID + Noffset/Woffset/Soffset/Eoffset` onto `pzsorter_crate_01_`, and `hasFaces()` is false when those offsets are 0. Each cell therefore stores the offset to the other three faces (0 East, 1 South, 2 West, 3 North). `GroupName` is `Sorter` and `CustomName` is `Crate` on all four, which is the label "Sorter Crate", not the face list. The item still carries the crate's saved name and links. Dismantle is how you take it apart for materials.
 
 There is no `CanScrap`. Vanilla scrap returns whatever the material table says (nails, for wood), and it would not honour "always return the metal sheet". Dismantle is handled by our own menu.
 
