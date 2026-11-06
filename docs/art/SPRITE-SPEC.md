@@ -105,13 +105,14 @@ The entity that places the crate is `Contents/mods/PZSorter/42/media/scripts/PZS
 |---|---|---|
 | `container` | `crate` | Loot icon and container behaviour |
 | `ContainerCapacity` | `50` | The 50 capacity. The chunk loader reads this. A Lua-only capacity resets on reload (HydeCo, "Containers") |
-| `CustomName` | `Sorter Crate` | Fallback label before the player's name is applied |
+| `CustomName` | `Crate` | The noun. With GroupName, the moveable label is "Sorter Crate" |
+| `GroupName` | `Sorter` | Same on all four cells, so rotation finds the sibling facings |
 | `Facing` | `E`, `S`, `W`, or `N` | Which way this cell points |
 | `CanBreak` | (flag, no value) | A sledge can break it, like other crates |
 | `BlocksPlacement` | (flag) | Another build cannot occupy the same square |
 | `solid` | (flag) | You walk around it, not through it |
 
-`IsMoveAble` is deliberately absent. A pickup would turn the crate into a generic moved item and drop the saved name. Dismantle is the way to take it apart in this step.
+`IsMoveAble` is set, and `CustomItem` is `PZSorter.SorterCrate`, so vanilla pickup creates that item. Rotation does not search `GroupName`. `ISMoveableSpriteProps:getFaces()` adds `spriteID + Noffset/Woffset/Soffset/Eoffset` onto `pzsorter_crate_01_`, and `hasFaces()` is false when those offsets are 0. Each cell therefore stores the offset to the other three faces (0 East, 1 South, 2 West, 3 North). `GroupName` is `Sorter` and `CustomName` is `Crate` on all four, which is the label "Sorter Crate", not the face list. The item still carries the crate's saved name and links. Dismantle is how you take it apart for materials.
 
 There is no `CanScrap`. Vanilla scrap returns whatever the material table says (nails, for wood), and it would not honour "always return the metal sheet". Dismantle is handled by our own menu.
 

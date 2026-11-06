@@ -12,8 +12,15 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
-        CustomName = Sorter Crate
+        CustomItem = PZSorter.SorterCrate
+        CustomName = Crate
         Facing = E
+        GroupName = Sorter
+        IsMoveAble =
+        Noffset = 3
+        PickUpWeight = 15
+        Soffset = 1
+        Woffset = 2
         container = crate
         solid =
     }
@@ -24,8 +31,15 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
-        CustomName = Sorter Crate
+        CustomItem = PZSorter.SorterCrate
+        CustomName = Crate
+        Eoffset = -1
         Facing = S
+        GroupName = Sorter
+        IsMoveAble =
+        Noffset = 2
+        PickUpWeight = 15
+        Woffset = 1
         container = crate
         solid =
     }
@@ -36,8 +50,15 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
-        CustomName = Sorter Crate
+        CustomItem = PZSorter.SorterCrate
+        CustomName = Crate
+        Eoffset = -2
         Facing = W
+        GroupName = Sorter
+        IsMoveAble =
+        Noffset = 1
+        PickUpWeight = 15
+        Soffset = -1
         container = crate
         solid =
     }
@@ -48,8 +69,15 @@ tileset
         BlocksPlacement =
         CanBreak =
         ContainerCapacity = 50
-        CustomName = Sorter Crate
+        CustomItem = PZSorter.SorterCrate
+        CustomName = Crate
+        Eoffset = -3
         Facing = N
+        GroupName = Sorter
+        IsMoveAble =
+        PickUpWeight = 15
+        Soffset = -2
+        Woffset = -1
         container = crate
         solid =
     }

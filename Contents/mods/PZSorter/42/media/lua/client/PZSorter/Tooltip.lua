@@ -94,15 +94,13 @@ function Tooltip.applyName(object)
         end
         return
     end
-    if object.setName then
-        pcall(function()
-            object:setName(title)
-        end)
+    -- IsoObject:setName takes a string. The container title is a separate
+    -- call: ItemContainer:setCustomName(string), which getCustomName reads.
+    if type(title) == "string" and object.setName and type(object.setName) == "function" then
+        object:setName(title)
     end
-    if container and container.setCustomName then
-        pcall(function()
-            container:setCustomName(title)
-        end)
+    if type(title) == "string" and container and type(container.setCustomName) == "function" then
+        container:setCustomName(title)
     end
     -- This write is ours. A later refresh must not read it back as a
     -- vanilla rename and throw away the name the player just typed.
@@ -127,10 +125,8 @@ local function retitleOpenWindows(page)
             if button.setTitle then
                 button:setTitle(title)
             end
-            if current ~= title and container.setCustomName then
-                pcall(function()
-                    container:setCustomName(title)
-                end)
+            if type(title) == "string" and current ~= title and container.setCustomName and type(container.setCustomName) == "function" then
+                container:setCustomName(title)
             end
         end
     end

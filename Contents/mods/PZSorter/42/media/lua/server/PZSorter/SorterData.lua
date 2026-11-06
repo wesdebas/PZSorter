@@ -16,6 +16,7 @@ require "PZSorter/Config"
 require "PZSorter/Names"
 require "PZSorter/Dismantle"
 require "PZSorter/ItemTags"
+require "PZSorter/Carry"
 
 PZSorter = PZSorter or {}
 PZSorter.SorterData = PZSorter.SorterData or {}
@@ -45,6 +46,10 @@ local function worldTable()
         stored.sorters = {}
     end
     return stored
+end
+
+function Data.getWorld()
+    return worldTable()
 end
 
 local function syncWorld()
@@ -95,6 +100,30 @@ function Data.initNew(object)
     local square = object:getSquare()
     if not square then
         return nil
+    end
+    -- A picked-up crate is being placed. Keep its id and links. A new id
+    -- here would orphan every container that still points at the old one,
+    -- and the name box would open for a crate the player already named.
+    local pending = PZSorter.Carry and PZSorter.Carry.pending
+    if type(pending) == "table" and pending.id ~= nil then
+        PZSorter.Carry.pending = nil
+        local record = PZSorter.Carry.restore(pending, square:getX(), square:getY(), square:getZ())
+        object:getModData()[Config.MOD_DATA_KEY] = record
+        local world = worldTable()
+        PZSorter.Names.absorb(world.sorters, record)
+        local numericId = tonumber(record.id)
+        if numericId and world.nextId <= numericId then
+            world.nextId = numericId + 1
+        end
+        syncWorld()
+        Data.applyContainerName(object)
+        if object.transmitModData then
+            pcall(function()
+                object:transmitModData()
+            end)
+        end
+        print("PZSorter: place restored name=" .. tostring(record.name) .. " links=" .. tostring(#record.links))
+        return record
     end
     local world = worldTable()
     local id = tostring(world.nextId)
@@ -323,12 +352,13 @@ function Data.applyContainerName(object)
     local record = object.getModData and object:getModData()[Config.MOD_DATA_KEY]
     local title = PZSorter.Names.containerTitle(record and record.name)
     local container = object:getContainer()
+    -- ItemContainer:setCustomName takes the title string. That is what the
+    -- loot window reads back with getCustomName. An InventoryItem uses
+    -- setName plus setCustomName(true) instead, and must not be called here.
     local wrote = false
-    if container and container.setCustomName then
-        local ok = pcall(function()
-            container:setCustomName(title)
-        end)
-        wrote = ok and true or false
+    if container and type(container.setCustomName) == "function" and type(title) == "string" then
+        container:setCustomName(title)
+        wrote = true
     end
     -- Remember the write only when the container actually took it. If the
     -- write did not happen, the previous appliedName is still the name a
@@ -515,6 +545,10 @@ function Data.dismantleObject(player, object)
     give(player, items.smallMetalSheet, result.smallMetalSheets)
     print("PZSorter: gave materials planks=" .. tostring(result.planks) .. " screws=" .. tostring(result.screws) .. " sheet=" .. tostring(result.smallMetalSheets))
     local record = object:getModData()[Config.MOD_DATA_KEY]
+    if record and PZSorter.Commands and PZSorter.Commands.releaseSorter then
+        print("PZSorter: clearing links before the crate is removed")
+        PZSorter.Commands.releaseSorter(record)
+    end
     print("PZSorter: removing crate")
     removeObject(object)
     if record and record.id ~= nil then
@@ -557,7 +591,8 @@ local function onClientCommand(module, command, player, args)
     local handler = COMMANDS[command]
     if handler then
         handler(player, args)
-    else
+    elseif command ~= "Assign" and command ~= "Move" and command ~= "Unassign" then
+        -- Those three are handled in Commands.lua, which has its own listener.
         print("PZSorter: OnClientCommand has no handler for " .. tostring(command))
     end
 end
@@ -589,6 +624,6 @@ Events.OnObjectAdded.Add(onObjectAdded)
 Events.LoadGridsquare.Add(onLoadGridsquare)
 Events.OnClientCommand.Add(onClientCommand)
 
-print("PZSorter: crate save data loaded (0.1.0)")
+print("PZSorter: crate save data loaded (0.2.0)")
 
 return Data

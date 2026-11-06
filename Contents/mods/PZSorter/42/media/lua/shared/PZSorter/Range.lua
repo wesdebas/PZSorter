@@ -1,8 +1,7 @@
 -- How far a sorter can reach.
 --
--- Step 1 only stores the sandbox option and this rule. The menu that assigns
--- containers is a later step. The rule lives here now so that later step
--- calls one tested function instead of inventing a second meaning of "20 tiles".
+-- Assigning a container (step 2) calls isInRange. The menu and the server
+-- both use it, so "20 tiles" cannot mean two different things.
 --
 -- The owner decided the shape: a square, counted in tiles, on the crate's
 -- floor and one floor above and one floor below. A square in tile steps is
@@ -83,6 +82,16 @@ function Range.isInRange(sorter, target, rangeTiles)
     end
     local range = Range.clamp(rangeTiles)
     return Range.chebyshev(sx, sy, tx, ty) <= range
+end
+
+-- The live sandbox option, still clamped to 20..30. Tests and a dedicated
+-- server that has not loaded the option yet both get the default of 20.
+function Range.current()
+    local value = nil
+    if SandboxVars and SandboxVars.PZSorter then
+        value = SandboxVars.PZSorter.SorterRange
+    end
+    return Range.clamp(value)
 end
 
 return Range

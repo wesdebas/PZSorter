@@ -60,6 +60,10 @@ describe("sorter range", function()
         assert.is_false(Range.isInRange(crate, at(31, 20, 0), nil))
     end)
 
+    it("reads a missing sandbox option as 20", function()
+        assert.are.equal(20, Range.current())
+    end)
+
     it("rejects a point that is not a tile coordinate", function()
         assert.is_false(Range.isInRange(crate, { x = 10, y = 20 }, 20))
         assert.is_false(Range.isInRange(nil, crate, 20))

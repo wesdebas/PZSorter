@@ -8,7 +8,8 @@
 PZSorter = PZSorter or {}
 
 PZSorter.Config = {
-    -- Bumped only when the saved shape changes. Step 1 is the first shape.
+    -- Bumped only when the saved shape changes. Step 2 fills in the link
+    -- list that step 1 already reserved, so the schema stays 1.
     SCHEMA = 1,
     -- Weight capacity of the crate. Comes from the tile property too.
     CAPACITY = 50,

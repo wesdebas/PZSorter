@@ -27,6 +27,7 @@ from build_tiles import (  # noqa: E402
     TILESET_INDEX,
     TILESET_NAME,
     TILES_PATH,
+    face_offsets,
     face_path,
     sheet_path,
     sprite_name,
@@ -71,10 +72,28 @@ def main() -> None:
             fail("cell %s is not a crate container" % index)
         if "CanBreak" not in props or "solid" not in props:
             fail("cell %s is missing CanBreak or solid" % index)
-        # A moveable pickup would bypass the crate's saved name. Step 1 does
-        # not set IsMoveAble on purpose.
-        if "IsMoveAble" in props:
-            fail("cell %s is marked moveable" % index)
+        # Pickup creates PZSorter.SorterCrate. Without IsMoveAble and
+        # CustomItem the move action plays and then creates no item.
+        if "IsMoveAble" not in props:
+            fail("cell %s is not moveable" % index)
+        if props.get("CustomItem") != "PZSorter.SorterCrate":
+            fail("cell %s CustomItem is %s" % (index, props.get("CustomItem")))
+        if props.get("CustomName") != "Crate":
+            fail("cell %s CustomName is %s" % (index, props.get("CustomName")))
+        if props.get("GroupName") != "Sorter":
+            fail("cell %s GroupName is %s" % (index, props.get("GroupName")))
+        if "ForceSingleItem" in props:
+            fail("cell %s is ForceSingleItem, so the place cursor will not rotate it" % index)
+        # getFaces() builds pzsorter_crate_01_<spriteID + offset>. Missing
+        # offsets make hasFaces() false, so R never changes the ghost.
+        expected_offsets = face_offsets(facing)
+        for key, value in expected_offsets.items():
+            if props.get(key) != value:
+                fail("cell %s %s is %s, expected %s" % (index, key, props.get(key), value))
+        for other in ("N", "W", "S", "E"):
+            key = "%soffset" % other
+            if other != facing and key not in expected_offsets:
+                fail("cell %s missing computed %s" % (index, key))
 
     for index in range(len(FACING_ORDER), 64):
         if tileset.tiles[index].properties:
@@ -122,7 +141,7 @@ def main() -> None:
     for line in (
         "id=PZSorter_wd",
         "author=wesdebas",
-        "modversion=0.1.0",
+        "modversion=0.2.0",
         "versionMin=42.0",
         "pack=pzsorter_crate",
         "tiledef=pzsorter_crate 7311",
