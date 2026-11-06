@@ -67,6 +67,12 @@ function Carry.canPickUp(itemCount)
     return itemCount <= 0
 end
 
+-- Same join as ISMoveableSpriteProps:getFaces. sheetName keeps the
+-- trailing underscore from the sprite name, then spriteID + offset.
+function Carry.offsetSprite(sheetName, spriteId, offset)
+    return sheetName .. tostring(spriteId + offset)
+end
+
 function Carry.pack(record)
     local links = {}
     for _, link in ipairs(Links.each(record and record.links)) do

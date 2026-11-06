@@ -50,6 +50,18 @@ describe("picked up sorter crate", function()
         assert.is_false(Carry.nameItem(nil, "Home"))
     end)
 
+    it("builds the other facing the way getFaces does, spriteID plus offset", function()
+        local sheet = "pzsorter_crate_01_"
+        -- East cell is index 0. North is 3, west is 2, south is 1.
+        assert.are.equal("pzsorter_crate_01_3", Carry.offsetSprite(sheet, 0, 3))
+        assert.are.equal("pzsorter_crate_01_2", Carry.offsetSprite(sheet, 0, 2))
+        assert.are.equal("pzsorter_crate_01_1", Carry.offsetSprite(sheet, 0, 1))
+        -- North cell is index 3. East is 3 + -3.
+        assert.are.equal("pzsorter_crate_01_0", Carry.offsetSprite(sheet, 3, -3))
+        assert.are.equal("pzsorter_crate_01_1", Carry.offsetSprite(sheet, 3, -2))
+        assert.are.equal("pzsorter_crate_01_2", Carry.offsetSprite(sheet, 3, -1))
+    end)
+
     it("refuses pickup when the crate still holds items", function()
         assert.is_true(Carry.canPickUp(0))
         assert.is_false(Carry.canPickUp(1))

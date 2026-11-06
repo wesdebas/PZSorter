@@ -366,14 +366,29 @@ local function wrapPlace(methodName)
     return true
 end
 
+local function propFlag(props, key)
+    if not props or not props.has or not props:has(key) then
+        return "-"
+    end
+    local value = props.get and props:get(key) or ""
+    if value == nil or value == "" then
+        return "yes"
+    end
+    return tostring(value)
+end
+
+-- Tile properties are applied in LoadTileDefinitions, which is after this
+-- file runs. A dump here sees the texture name and no Facing or offsets.
+-- Only keep the line once IsMoveAble is actually on the sprite.
 local function logLoadedSprites()
     if Pickup._propsLogged then
         return
     end
     if not getSprite then
+        print("PZSorter: sprite props waiting, getSprite is not ready")
         return
     end
-    Pickup._propsLogged = true
+    local loaded = false
     for index = 0, 3 do
         local spriteName = "pzsorter_crate_01_" .. tostring(index)
         local sprite = getSprite(spriteName)
@@ -381,27 +396,80 @@ local function logLoadedSprites()
             print("PZSorter: sprite props " .. spriteName .. " missing")
         else
             local props = sprite:getProperties()
-            local function flag(key)
-                if props and props.has and props:has(key) then
-                    local value = props.get and props:get(key) or ""
-                    if value == nil or value == "" then
-                        return "yes"
-                    end
-                    return tostring(value)
-                end
-                return "-"
+            if propFlag(props, "IsMoveAble") ~= "-" then
+                loaded = true
             end
             print("PZSorter: sprite props " .. spriteName
-                .. " Facing=" .. flag("Facing")
-                .. " GroupName=" .. flag("GroupName")
-                .. " CustomName=" .. flag("CustomName")
-                .. " IsMoveAble=" .. flag("IsMoveAble")
-                .. " Noffset=" .. flag("Noffset")
-                .. " Woffset=" .. flag("Woffset")
-                .. " Soffset=" .. flag("Soffset")
-                .. " Eoffset=" .. flag("Eoffset"))
+                .. " Facing=" .. propFlag(props, "Facing")
+                .. " GroupName=" .. propFlag(props, "GroupName")
+                .. " CustomName=" .. propFlag(props, "CustomName")
+                .. " IsMoveAble=" .. propFlag(props, "IsMoveAble")
+                .. " Noffset=" .. propFlag(props, "Noffset")
+                .. " Woffset=" .. propFlag(props, "Woffset")
+                .. " Soffset=" .. propFlag(props, "Soffset")
+                .. " Eoffset=" .. propFlag(props, "Eoffset"))
         end
     end
+    if loaded then
+        Pickup._propsLogged = true
+    else
+        print("PZSorter: sprite props not loaded yet, will try again")
+    end
+end
+
+-- Keyboard R calls ISMoveableCursor:rotateKey, which only bumps the
+-- inventory index. The face ghost uses cursorFacing, set by
+-- rotateWhilePlacing (the joypad path) when hasFaces() is true.
+-- hasFaces() is true only when Noffset/Woffset/Soffset/Eoffset are not 0.
+-- This file loads before server/BuildingObjects, so the class is missing
+-- on the first install and must be wrapped later.
+local function installRotateHook()
+    if not ISMoveableCursor or type(ISMoveableCursor.rotateKey) ~= "function" then
+        print("PZSorter: rotate hook waiting, ISMoveableCursor not loaded")
+        return false
+    end
+    if ISMoveableCursor._PZSorterRotate then
+        return true
+    end
+    ISMoveableCursor._PZSorterRotate = true
+    local oldRotateKey = ISMoveableCursor.rotateKey
+    function ISMoveableCursor:rotateKey(key, joypad)
+        local rotate = joypad and true or false
+        if not rotate and getCore and KeybindId and getCore().isKey then
+            rotate = getCore():isKey(KeybindId.ROTATE_BUILDING, key) and true or false
+        end
+        local mode = ISMoveableCursor.mode and ISMoveableCursor.mode[self.player]
+        if rotate and mode == "place" then
+            local objects = self.objectListCache
+            if (not objects or not objects[self.objectIndex]) and self.getInventoryObjectList then
+                objects = self:getInventoryObjectList()
+            end
+            local entry = objects and objects[self.objectIndex]
+            local props = entry and entry.moveProps
+            local spriteName = props and props.spriteName
+            if props and Config.isSorterSpriteName(spriteName) then
+                logLoadedSprites()
+                local names = {}
+                local hasFaces = props.hasFaces and props:hasFaces()
+                if hasFaces and props.getIndexedFaces then
+                    local indexed = props:getIndexedFaces()
+                    if indexed then
+                        for i = 1, #indexed do
+                            names[#names + 1] = tostring(indexed[i])
+                        end
+                    end
+                end
+                print("PZSorter: rotate faces found=" .. tostring(#names) .. " [" .. table.concat(names, ", ") .. "]")
+                if #names > 1 and self.rotateWhilePlacing then
+                    self:rotateWhilePlacing()
+                    return
+                end
+            end
+        end
+        return oldRotateKey(self, key, joypad)
+    end
+    print("PZSorter: rotate hook installed")
+    return true
 end
 
 local function install()
@@ -429,51 +497,6 @@ local function install()
         end
     end
     print("PZSorter: pickup hook installed pickup=" .. tostring(pickupName) .. " place=" .. table.concat(placeNames, ",") .. " wrapped=" .. tostring(pickupWrapped and placeWrapped))
-
-    -- R during place increments the inventory index, not the face, unless
-    -- hasFaces() is true and something sets cursorFacing. Joypad X calls
-    -- rotateWhilePlacing. Keyboard R does not. For this crate, R should
-    -- walk getIndexedFaces(), which is N, W, S, E from the offsets.
-    if ISMoveableCursor and type(ISMoveableCursor.rotateKey) == "function" and not ISMoveableCursor._PZSorterRotate then
-        ISMoveableCursor._PZSorterRotate = true
-        local oldRotateKey = ISMoveableCursor.rotateKey
-        function ISMoveableCursor:rotateKey(key, joypad)
-            local rotate = joypad and true or false
-            if not rotate and getCore and KeybindId and getCore().isKey then
-                rotate = getCore():isKey(KeybindId.ROTATE_BUILDING, key) and true or false
-            end
-            local mode = ISMoveableCursor.mode and ISMoveableCursor.mode[self.player]
-            if rotate and mode == "place" then
-                local objects = self.objectListCache
-                if (not objects or not objects[self.objectIndex]) and self.getInventoryObjectList then
-                    objects = self:getInventoryObjectList()
-                end
-                local entry = objects and objects[self.objectIndex]
-                local props = entry and entry.moveProps
-                local spriteName = props and props.spriteName
-                if props and Config.isSorterSpriteName(spriteName) then
-                    local names = {}
-                    if props.getIndexedFaces and props.hasFaces and props:hasFaces() then
-                        local indexed = props:getIndexedFaces()
-                        if indexed then
-                            for i = 1, #indexed do
-                                names[#names + 1] = tostring(indexed[i])
-                            end
-                        end
-                    end
-                    if not Pickup._rotateLogged then
-                        Pickup._rotateLogged = true
-                        print("PZSorter: rotate faces found=" .. tostring(#names) .. " [" .. table.concat(names, ", ") .. "]")
-                    end
-                    if #names > 1 and self.rotateWhilePlacing then
-                        self:rotateWhilePlacing()
-                        return
-                    end
-                end
-            end
-            return oldRotateKey(self, key, joypad)
-        end
-    end
 
     if ISMoveablesAction and type(ISMoveablesAction.complete) == "function" and not ISMoveablesAction._PZSorterPlace then
         ISMoveablesAction._PZSorterPlace = true
@@ -533,14 +556,15 @@ local function install()
     end
 end
 
-    if Events and Events.OnGameStart then
-        Events.OnGameStart.Add(function()
-            install()
-            logLoadedSprites()
-        end)
-    end
-    install()
-    logLoadedSprites()
+if Events and Events.OnGameStart then
+    Events.OnGameStart.Add(function()
+        install()
+        installRotateHook()
+        logLoadedSprites()
+    end)
+end
+install()
+installRotateHook()
 
 print("PZSorter: pickup loaded (0.2.0)")
 
