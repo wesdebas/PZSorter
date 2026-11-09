@@ -254,6 +254,31 @@ function World.weightAndCapacity(container)
     return weight, capacity
 end
 
+-- The weight a container actually gains when this item is put in it.
+-- Unequipped weight includes what is inside a bag, which is what we want:
+-- the bag moves as one item and its contents are not weighed a second time.
+function World.itemWeight(item)
+    if not item then
+        return 0
+    end
+    local value = nil
+    pcall(function()
+        if item.getUnequippedWeight then
+            value = item:getUnequippedWeight()
+        end
+        if type(value) ~= "number" and item.getActualWeight then
+            value = item:getActualWeight()
+        end
+        if type(value) ~= "number" and item.getWeight then
+            value = item:getWeight()
+        end
+    end)
+    if type(value) ~= "number" or value < 0 then
+        return 0
+    end
+    return value
+end
+
 -- The sorter id written on this container. The container's own mod data is
 -- the spec's copy. The object's slot map is the copy transmitModData is
 -- known to save, from step 1. Either one is enough after a reload.

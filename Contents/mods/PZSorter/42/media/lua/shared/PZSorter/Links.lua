@@ -10,8 +10,8 @@
 --   index       which container on that tile (0 is the first). A fridge
 --               with a freezer is two indexes on one tile.
 --   name        "Fridge 1", "Crate 2", and so on
---   priority    default 5. Editing it is a later step.
---   filter      empty table for now. The filter tree is a later step.
+--   priority    1 to 9, default 5. Higher wins a tie while sorting.
+--   filter      categories, item types, and exclusions. {} accepts nothing.
 --
 -- The game's save turns a Lua array into string keys ("1", "2"). ipairs
 -- then sees an empty list and the panel would forget every link after a
@@ -28,6 +28,23 @@ require "PZSorter/Range"
 local Range = PZSorter.Range
 
 Links.DEFAULT_PRIORITY = 5
+
+-- The arrows in the panel stop at 1 and 9. A missing or broken value is the
+-- default, so an old save that has no priority still sorts as 5.
+function Links.clampPriority(value)
+    local number = tonumber(value)
+    if number == nil then
+        return Links.DEFAULT_PRIORITY
+    end
+    number = math.floor(number)
+    if number < 1 then
+        return 1
+    end
+    if number > 9 then
+        return 9
+    end
+    return number
+end
 
 local function patternEscape(text)
     return (text:gsub("(%W)", "%%%1"))

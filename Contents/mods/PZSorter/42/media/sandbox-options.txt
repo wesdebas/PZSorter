@@ -9,3 +9,13 @@ option PZSorter.SorterRange
     page = PZSorter,
     translation = PZSorter_SorterRange,
 }
+
+option PZSorter.SortSpeed
+{
+    type = enum,
+    numValues = 2,
+    default = 1,
+    page = PZSorter,
+    translation = PZSorter_SortSpeed,
+    valueTranslation = PZSorter_SortSpeed,
+}

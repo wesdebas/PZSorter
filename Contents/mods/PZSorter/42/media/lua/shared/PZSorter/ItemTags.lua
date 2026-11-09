@@ -22,26 +22,37 @@ ItemTags.TOOLS = {
     { field = "METAL_SAW", name = "base:metalsaw" },
 }
 
-local function lookup(entry)
-    if ItemTag and ItemTag[entry.field] then
-        return ItemTag[entry.field]
-    end
-    if not ItemTag or not ItemTag.get then
+-- ItemTag.get takes a ResourceLocation, not a string. Passing the script id
+-- "base:hammer" throws the same "no implementation for String" error that
+-- hasTag("Key") throws, and pcall does not hide that stack trace.
+function ItemTags.lookup(entry, api)
+    if type(entry) ~= "table" then
         return nil
     end
-    local ok, tag = pcall(ItemTag.get, entry.name)
-    if ok and tag then
+    local tags = api and api.ItemTag or ItemTag
+    local locations = api and api.ResourceLocation or ResourceLocation
+    if tags and entry.field and tags[entry.field] ~= nil and type(tags[entry.field]) ~= "string" then
+        return tags[entry.field]
+    end
+    if not tags or type(tags.get) ~= "function" then
+        return nil
+    end
+    if not locations or type(locations.of) ~= "function" then
+        return nil
+    end
+    local located, location = pcall(locations.of, entry.name)
+    if not located or location == nil or type(location) == "string" then
+        return nil
+    end
+    local got, tag = pcall(tags.get, location)
+    if got and tag then
         return tag
     end
-    if ResourceLocation and ResourceLocation.of then
-        ok, tag = pcall(function()
-            return ItemTag.get(ResourceLocation.of(entry.name))
-        end)
-        if ok and tag then
-            return tag
-        end
-    end
     return nil
+end
+
+local function lookup(entry)
+    return ItemTags.lookup(entry)
 end
 
 local function inventoryHas(inventory, tag)

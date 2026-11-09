@@ -24,5 +24,15 @@
     "IGUI_PZSorter_NoSorters": "No sorter nearby",
     "IGUI_PZSorter_NoLinks": "No containers assigned yet.",
     "IGUI_PZSorter_Safehouse": "Only safehouse members can use this sorter.",
-    "IGUI_PZSorter_PickupFull": "Empty the Sorter Crate before picking it up."
+    "IGUI_PZSorter_PickupFull": "Empty the Sorter Crate before picking it up.",
+    "IGUI_PZSorter_NoFilter": "No filter",
+    "IGUI_PZSorter_EditFilter": "Edit filter",
+    "IGUI_PZSorter_AllowAll": "Allow All",
+    "IGUI_PZSorter_ClearAll": "Clear All",
+    "IGUI_PZSorter_FilterDone": "Done",
+    "IGUI_PZSorter_FilterTitle": "Filter for %1",
+    "IGUI_PZSorter_Priority": "Priority",
+    "IGUI_PZSorter_PriorityUp": "^",
+    "IGUI_PZSorter_PriorityDown": "v",
+    "IGUI_PZSorter_SummaryTitle": "Sort finished"
 }

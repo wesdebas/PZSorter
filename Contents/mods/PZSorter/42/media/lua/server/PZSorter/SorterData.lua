@@ -591,7 +591,9 @@ local function onClientCommand(module, command, player, args)
     local handler = COMMANDS[command]
     if handler then
         handler(player, args)
-    elseif command ~= "Assign" and command ~= "Move" and command ~= "Unassign" then
+    elseif command ~= "Assign" and command ~= "Move" and command ~= "Unassign"
+        and command ~= "SortBegin" and command ~= "SortStep" and command ~= "SortFinish"
+        and command ~= "SortCancel" and command ~= "SetPriority" and command ~= "SetFilter" then
         -- Those three are handled in Commands.lua, which has its own listener.
         print("PZSorter: OnClientCommand has no handler for " .. tostring(command))
     end
@@ -624,6 +626,6 @@ Events.OnObjectAdded.Add(onObjectAdded)
 Events.LoadGridsquare.Add(onLoadGridsquare)
 Events.OnClientCommand.Add(onClientCommand)
 
-print("PZSorter: crate save data loaded (0.2.0)")
+print("PZSorter: crate save data loaded (0.3.0)")
 
 return Data

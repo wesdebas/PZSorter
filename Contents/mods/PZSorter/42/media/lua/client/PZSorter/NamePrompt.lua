@@ -554,6 +554,6 @@ Events.LoadGridsquare.Add(onLoadGridsquare)
 Events.OnServerCommand.Add(onServerCommand)
 Events.OnFillWorldObjectContextMenu.Add(onFillRename)
 
-print("PZSorter: name prompt loaded (0.2.0)")
+print("PZSorter: name prompt loaded (0.3.0)")
 
 return Prompt

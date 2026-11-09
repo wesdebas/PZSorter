@@ -5,6 +5,20 @@ All notable changes to PZSorter are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-09
+
+### Fixed
+
+- Sorting no longer calls hasTag with a text name. On Build 42 that call throws for every item, and the error still shows up in the log when it is caught. Keys are recognised by their class, category, type, and the game's ItemTag values.
+- A sort move is checked again immediately before the item leaves the crate. It only goes into a real container that still has room. The ground is refused, and a failed add is put back in the sorter.
+
+### Added
+
+- Each assigned container has a priority from 1 to 9, starting at 5, and a category filter. The row lists the categories, or "No filter" when nothing is ticked. Edit filter is a checklist of the inventory's own categories, with Allow All and Clear All.
+- Sort on the sorter panel and on the crate's right-click menu. Food goes to a container that takes Food. Tools go to the tool container with the higher priority. A full container overflows to the next match. Equipped items, favorited items, and keys stay put. A bag moves as one item. Anything with no match, or nowhere with room, stays in the Sorter Crate.
+- Sorting is a timed action. About 50 items takes about 10 seconds, longer when the loot is heavy. Walking away or getting hit stops it, and items that already moved stay moved. The sandbox option Sort speed is Realistic or Instant.
+- When the sort finishes, a small window reports the counts, for example "Sorted 38 items. 4 left: Freezer 1 full (3), no match (1)."
+
 ## [0.2.0] - 2026-11-04
 
 ### Added
