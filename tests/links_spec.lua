@@ -31,6 +31,26 @@ describe("container links", function()
         assert.are.equal("Crate 2", second.name)
     end)
 
+    it("shows a vanilla custom name and falls back to the auto name", function()
+        local home = sorter("1", "Home")
+        local side = Links.add(home, spot(1, 1, 0), "sidetable", nil)
+        local counter = Links.add(home, spot(2, 2, 0), "counter", nil)
+        assert.are.equal("Sidetable 1", side.name)
+        assert.are.equal("Counter 1", counter.name)
+        -- The auto name stays on the link. The custom name is only how it
+        -- is shown, so clearing the rename brings the auto name back and
+        -- the next sidetable still sees that "Sidetable 1" is taken.
+        assert.are.equal("Pantry", Links.displayName(side.name, "Pantry"))
+        assert.are.equal("Kitchen counter", Links.displayName(counter.name, "  Kitchen counter  "))
+        assert.are.equal("Sidetable 1", side.name)
+        assert.are.equal("Sidetable 1", Links.displayName(side.name, nil))
+        assert.are.equal("Sidetable 1", Links.displayName(side.name, ""))
+        assert.are.equal("Sidetable 1", Links.displayName(side.name, "   "))
+        assert.are.equal("Counter 1", Links.displayName(counter.name, 12))
+        local again = Links.add(home, spot(3, 3, 0), "sidetable", nil)
+        assert.are.equal("Sidetable 2", again.name)
+    end)
+
     it("reuses the lowest type number after an unassign", function()
         local home = sorter("1", "Home")
         Links.add(home, spot(1, 1, 0), "fridge", nil)

@@ -12,8 +12,10 @@ PZSorter.WorldContainers = PZSorter.WorldContainers or {}
 local World = PZSorter.WorldContainers
 
 require "PZSorter/Config"
+require "PZSorter/Links"
 
 local Config = PZSorter.Config
+local Links = PZSorter.Links
 
 local function spriteNameOf(object)
     if not object or not object.getSprite then
@@ -362,6 +364,25 @@ function World.writeSorterId(row, sorterId)
             row.object:transmitModData()
         end)
     end
+end
+
+-- The vanilla rename, if the player set one. getCustomName is nil until
+-- then. We never call hasTag, and we never read IsoObject:getName, because
+-- that is the furniture type ("sidetable") and would hide "Sidetable 1".
+function World.customName(container)
+    if not container or type(container.getCustomName) ~= "function" then
+        return nil
+    end
+    local ok, name = pcall(container.getCustomName, container)
+    if not ok or type(name) ~= "string" then
+        return nil
+    end
+    return name
+end
+
+-- Custom name when one is set, otherwise the auto name stored on the link.
+function World.containerLabel(autoName, container)
+    return Links.displayName(autoName, World.customName(container))
 end
 
 return World

@@ -104,6 +104,30 @@ describe("filter format", function()
         assert.is_true(Filter.isEmpty(fullyClear))
     end)
 
+    it("replaces every set, which is how an item tick is saved", function()
+        local old = Filter.normalize({ categories = { ["1"] = "Food" } })
+        assert.is_true(old.categories.Food)
+        assert.is_true(Filter.accepts(old, { category = "Food", type = "Base.Apple" }))
+        local replaced = Filter.replace({
+            categories = Filter.parseList("Tool"),
+            items = Filter.parseList("Base.Hammer"),
+            excluded = Filter.parseList("Base.Saw"),
+        })
+        assert.is_nil(replaced.categories.Food)
+        assert.is_true(replaced.categories.Tool)
+        assert.is_true(replaced.items["Base.Hammer"])
+        assert.is_true(replaced.excluded["Base.Saw"])
+        assert.are.equal(2, Filter.specificity(replaced, { category = "Weapon", type = "Base.Hammer" }))
+        assert.are.equal(0, Filter.specificity(replaced, { category = "Tool", type = "Base.Saw" }))
+        local cleared = Filter.replace({
+            categories = Filter.parseList(""),
+            items = Filter.parseList(""),
+            excluded = Filter.parseList(""),
+        })
+        assert.are.equal("No filter", Filter.summary(cleared))
+        assert.is_true(Filter.isEmpty(cleared))
+    end)
+
     it("parses a newline list and treats an empty one as Clear All", function()
         assert.are.same({}, Filter.parseList(nil))
         assert.are.same({}, Filter.parseList(""))

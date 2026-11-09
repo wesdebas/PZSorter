@@ -376,4 +376,33 @@ function Links.status(sorterPos, link, rangeTiles, found, loaded)
     return "ok"
 end
 
+-- The name to show for a linked container.
+--
+-- autoName is the "Sidetable 1" chosen when the container was assigned.
+-- It stays on the sorter link so a later rename can be cleared and the
+-- row falls back, and so the next "Sidetable N" still counts.
+--
+-- customName is the vanilla container rename. Build 42 stores that on
+-- the container itself (ItemContainer:getCustomName), which the game
+-- saves with the furniture. It is not in our modData and it is not the
+-- sorter link. Our own Rename menu only renames the Sorter Crate.
+--
+-- A blank custom name, or one that is not text, is not a rename.
+function Links.displayName(autoName, customName)
+    local custom = nil
+    if type(customName) == "string" then
+        custom = (customName:gsub("^%s+", ""):gsub("%s+$", ""))
+        if custom == "" or custom:find("%c") then
+            custom = nil
+        end
+    end
+    if custom then
+        return custom
+    end
+    if type(autoName) == "string" and autoName ~= "" then
+        return autoName
+    end
+    return "Container"
+end
+
 return Links

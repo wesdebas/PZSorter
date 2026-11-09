@@ -24,9 +24,14 @@ When this file and the project plan disagree, this file wins. The design spec st
 - A realistic sort of about 50 items takes about 10 seconds, plus a little when the loot is heavy. Instant finishes on the next tick. Moodles can stretch the realistic time, the same way they stretch other timed actions.
 - The sort moves items on the server only. A multiplayer client asks for each step and does not move the item itself.
 
+## Already in this build (step 4)
+
+- Open question 5 was not settled. The three food groups do not overlap, and the meanings live in `FilterTree.foodGroup` so they can be changed in one place.
+  - **Frozen** means the food is frozen right now. It does not mean "this kind of food can be frozen". A frozen apple is Frozen, not Perishable. A frozen can is Frozen, not Non-perishable.
+  - **Perishable** means food that can rot and is not frozen right now.
+  - **Non-perishable** means food that never rots, such as a sealed can or dry food, and is not frozen right now.
+- A container's display name is the vanilla rename, stored on the container by `ItemContainer:getCustomName` and saved by the game with that furniture. It is not in our mod data, and it is not the name on the sorter link. The link keeps the automatic name ("Sidetable 1") and the row uses that when the custom name is blank. The Rename entry this mod adds is only for the Sorter Crate.
+
 ## For later steps (do not build these yet)
 
-- **Frozen** means the food is frozen right now. It does not mean "this kind of food can be frozen".
-- **Perishable** means anything that can rot.
-- Non-perishable was not given its own sentence. Until it is, treat it as food that cannot rot and is not frozen right now, so the three food groups do not overlap.
 - Workshop visibility is Public. wesdebas publishes the Workshop item himself.

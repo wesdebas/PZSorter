@@ -59,6 +59,30 @@ local function squareAt(x, y, z)
     return cell:getGridSquare(x, y, z)
 end
 
+-- The name in a log line. A vanilla rename on the container wins. The
+-- auto name on the link is the fallback when that rename is blank.
+local function containerLabel(link)
+    if type(link) ~= "table" then
+        return "Container"
+    end
+    local square = squareAt(link.x, link.y, link.z)
+    local row = square and World.find(square, link.index)
+    return World.containerLabel(link.name, row and row.container)
+end
+
+local function filterSummary(filter)
+    local Tree = PZSorter.FilterTree
+    if Tree and Tree.summary and Tree.cached then
+        local ok, text = pcall(function()
+            return Tree.summary(filter, Tree.cached())
+        end)
+        if ok and type(text) == "string" then
+            return text
+        end
+    end
+    return PZSorter.Filter.summary(filter)
+end
+
 local function near(player, x, y, z)
     x = tonumber(x)
     y = tonumber(y)
@@ -253,7 +277,7 @@ function Commands.assign(player, args)
     end
     World.writeSorterId(row, record.id)
     transmit(sorterObject)
-    print("PZSorter: assigned " .. tostring(link.name) .. " to " .. tostring(record.name) .. " id=" .. tostring(record.id))
+    print("PZSorter: assigned " .. containerLabel(link) .. " to " .. tostring(record.name) .. " id=" .. tostring(record.id))
     return true
 end
 
@@ -305,7 +329,7 @@ function Commands.move(player, args)
         end
         World.writeSorterId(row, record.id)
         transmit(sorterObject)
-        print("PZSorter: move had no previous sorter, assigned " .. tostring(link.name))
+        print("PZSorter: move had no previous sorter, assigned " .. containerLabel(link))
         return true
     end
     local fromSaved = livingRecord(ownerId)
@@ -331,7 +355,7 @@ function Commands.move(player, args)
     World.writeSorterId(row, record.id)
     transmit(fromObject)
     transmit(sorterObject)
-    print("PZSorter: moved " .. tostring(link.name) .. " to " .. tostring(record.name))
+    print("PZSorter: moved " .. containerLabel(link) .. " to " .. tostring(record.name))
     return true
 end
 
@@ -361,7 +385,7 @@ function Commands.unassign(player, args)
     if record then
         local removed, reason = Links.remove(record, spot)
         if removed then
-            print("PZSorter: unassigned " .. tostring(removed.name) .. " from " .. tostring(record.name))
+            print("PZSorter: unassigned " .. containerLabel(removed) .. " from " .. tostring(record.name))
         else
             print("PZSorter: unassign found no link on the sorter (" .. tostring(reason) .. ")")
         end
@@ -384,7 +408,7 @@ function Commands.unassign(player, args)
                 saved.links = packed.links
             end
             if removed then
-                print("PZSorter: unassigned " .. tostring(removed.name) .. " from carried " .. tostring(packed.name))
+                print("PZSorter: unassigned " .. containerLabel(removed) .. " from carried " .. tostring(packed.name))
             else
                 print("PZSorter: unassign found no carried link (" .. tostring(reason) .. ")")
             end
@@ -426,7 +450,7 @@ function Commands.setPriority(player, args)
     local previous = link.priority
     link.priority = Links.clampPriority(args.priority)
     transmit(sorterObject)
-    print("PZSorter: priority " .. tostring(link.name) .. " " .. tostring(previous) .. " -> " .. tostring(link.priority))
+    print("PZSorter: priority " .. containerLabel(link) .. " " .. tostring(previous) .. " -> " .. tostring(link.priority))
     return true
 end
 
@@ -450,17 +474,24 @@ function Commands.setFilter(player, args)
     if not link then
         return refuse("filter", "container is not linked")
     end
-    local names = nil
-    if type(args.categoriesText) == "string" then
-        names = PZSorter.Filter.parseList(args.categoriesText)
+    -- The item editor sends all three lists, and an empty list is a real
+    -- clear. A step 3 packet only has categoriesText, and that must keep
+    -- any item ticks already stored.
+    if args.itemsText ~= nil or args.excludedText ~= nil then
+        link.filter = PZSorter.Filter.replace({
+            categories = PZSorter.Filter.parseList(args.categoriesText or ""),
+            items = PZSorter.Filter.parseList(args.itemsText or ""),
+            excluded = PZSorter.Filter.parseList(args.excludedText or ""),
+        })
+    elseif type(args.categoriesText) == "string" then
+        link.filter = PZSorter.Filter.withCategories(link.filter, PZSorter.Filter.parseList(args.categoriesText))
     elseif type(args.categories) == "table" then
-        names = args.categories
+        link.filter = PZSorter.Filter.withCategories(link.filter, args.categories)
     else
         return refuse("filter", "no category list")
     end
-    link.filter = PZSorter.Filter.withCategories(link.filter, names)
     transmit(sorterObject)
-    print("PZSorter: filter " .. tostring(link.name) .. " " .. PZSorter.Filter.summary(link.filter))
+    print("PZSorter: filter " .. containerLabel(link) .. " " .. filterSummary(link.filter))
     return true
 end
 
@@ -559,6 +590,6 @@ end
 
 Events.OnClientCommand.Add(onClientCommand)
 
-print("PZSorter: container commands loaded (0.3.0)")
+print("PZSorter: container commands loaded (0.4.0)")
 
 return Commands

@@ -1,6 +1,6 @@
 # Testing PZSorter
 
-This is the install and the checks for the category-sort branch. Building, naming, and assigning from steps 1 and 2 are still here. This branch adds category filters, priority, and Sort.
+This is the install and the checks for the item-filters branch. Building, naming, assigning, and category sort from steps 1 to 3 are still here. This branch adds single items, search, Copy from contents, the food groups, and the container's own name on each row.
 
 Target game: Project Zomboid **Build 42.21** (the current stable build). The mod is marked Build 42 only.
 
@@ -19,7 +19,7 @@ The `mklink /J` line makes a folder link, so the game sees the repo inside its W
 ```
 cd /d C:\AI\Projects\PZSorter
 git fetch
-git checkout feature/category-sort
+git checkout feature/item-filters
 git pull
 pause
 ```
@@ -106,3 +106,20 @@ Priority goes from 1 to 9. The up arrow raises it (9 is the strongest). A new ro
 - [ ] Start a new game with Sort speed set to Instant. Press Sort. It finishes on the next tick instead of playing out the bar.
 - [ ] Clear All on one container. Its row says "No filter". Sort does not put anything in it.
 - [ ] `console.txt` has no PZSorter errors. Lines that say `sort begin`, `sort item`, `sort move` or `sort leave`, `sort summary`, and `summary popup` are expected. `filter categories=` should say `source=game`. `source=fallback` means the game's category list was not read; send the log.
+
+## Step 4 checklist
+
+You need one Sorter Crate and four containers in range: two ordinary crates (Box A and Box B), a fridge, a shelf, and a freezer. The inventory category for tools is **Tool**, not "Tools". Food is **Food**. Under Food the tree adds **Perishable**, **Frozen**, and **Non-perishable**.
+
+Perishable means the food can rot and is not frozen right now. Frozen means it is frozen right now. Non-perishable means it never rots, such as a sealed can. A frozen apple is Frozen, not Perishable.
+
+The Rename option this mod adds is only for the Sorter Crate. It logs `PZSorter: Rename added to the menu` when you right-click the crate. A sidetable or a counter is renamed by the game's own rename (the name that then shows on that container in the loot window). That name is stored on the container, not on the sorter. The row uses it when it is set, and uses Sidetable 1 or Counter 1 when it is not.
+
+- [ ] Box A: Edit filter, expand Tool, and tick only Hammer. Box B: tick the Tool category (the whole category, not each item). Sort. Hammers go to Box A. Other tools go to Box B. The log for the hammer says it was the more specific match by going to Box A.
+- [ ] On Box B, expand Tool and untick Saw. The Tool box shows a partial mark. Sort. Saws stay in the sorter. Other tools still go to Box B.
+- [ ] Type `screw` in the search box. The tree narrows to the screw row. Clear the search and the rest of the tree comes back.
+- [ ] Put three different kinds of item in an empty assigned crate. Edit filter, Copy from contents. Those three types are ticked, and the row names them (or counts them). The log says `filter copy from contents` and `types=3`.
+- [ ] Fridge = Perishable. Shelf = Non-perishable. Freezer = Frozen. Put a fresh food, a sealed can, and a frozen food in the sorter. Sort. The fresh food goes to the fridge, the can goes to the shelf, and the frozen food goes to the freezer. A fridge set to Perishable only does not take the can.
+- [ ] Rename a linked sidetable or counter with the game's rename, so the loot window shows the new name. Open Sorter. The row shows that name, not Sidetable 1 or Counter 1. The log line for the row shows the new name and `auto=` with the old automatic name. Do this while the panel is already open: the row changes on the next refresh. The filter window title uses the same name. A full container uses it in the summary popup ("Pantry full" rather than "Sidetable 1 full").
+- [ ] Save, quit to the desktop, and load. Open the filter again. The ticks are still there. The renamed container still shows its name. Clear the container's rename and the row goes back to the automatic name.
+- [ ] `console.txt` has no PZSorter errors. `filter categories=` still says `source=game`. `sort item` lines include `group=perishable`, `group=frozen`, `group=nonperishable`, or `group=none`.

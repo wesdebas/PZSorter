@@ -5,7 +5,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 ![Sorter Crate concept art](docs/images/sorter-crate-concept.jpg)
 *Concept art for the Sorter Crate.*
 
-> Status: step 3 (this branch) can build and name a Sorter Crate, assign containers, filter them by inventory category, and sort. Single items, Preview, and copy/paste are not in yet.
+> Status: step 4 (this branch) can build and name a Sorter Crate, assign containers, filter them by category or by single item, and sort. Preview and copy/paste between containers are not in yet.
 
 ## How it works
 
@@ -16,7 +16,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
    - Holds only 50 capacity, so it's a sorting tool, not extra storage.
 2. **Name it** when you place it, like "Main Base" or "Farm".
 3. **Assign containers.** Right-click any existing storage (crates, shelves, fridges, freezers, and so on) and choose **Assign to Sorter**. Only containers you assign are used. Each one must be within the sorter's range (20 tiles by default). A fridge and freezer on one tile are two rows. **Open Sorter** on the crate lists them.
-4. **Set filters.** Each row has a priority (1 to 9, default 5) and **Edit filter**. Tick whole inventory categories such as **Food** or **Tool**. Allow All and Clear All are on that list. A row with nothing ticked says **No filter** and receives nothing. Picking single items inside a category comes later.
+4. **Set filters.** Each row has a priority (1 to 9, default 5) and **Edit filter**. The list is the inventory's own categories. Open one to tick a single item, such as Hammer. A category with only some items ticked shows a partial mark. Food also has Perishable, Frozen, and Non-perishable. Search narrows the list. Allow All, Clear All, and Copy from contents are on that window. A row with nothing ticked says **No filter** and receives nothing. The row names a few items ("Hammer, Screws") or counts a whole category ("Food: 12 items"). A container you renamed in the game shows that name on the row.
 5. **Sort.** Press **Sort** on the panel, or right-click the Sorter Crate and choose **Sort**. Your character stays at the crate while the items move. Anything that doesn't match, or doesn't fit, stays in the Sorter Crate. A short summary says what moved and what stayed.
 
 ## Rules
@@ -34,9 +34,7 @@ A Project Zomboid (Build 42) mod that adds a **Sorter Crate**: drop your loot in
 
 ## Planned extras
 
-- "Copy from contents" sets a container's filter from what it already holds.
-- Search, and ticking single items, in the filter tree. Allow All and Clear All are already on the category list.
-- Preview, renaming, and a second player sorting the same crate. Assigning already checks safehouse membership: outside a safehouse anyone can use a sorter, and inside one only members can. Item moves already run on the server.
+- Preview, copying a filter from one container to another, and renaming the sorter from the panel header. Assigning already checks safehouse membership: outside a safehouse anyone can use a sorter, and inside one only members can. Item moves already run on the server.
 
 ## Install and test
 
@@ -57,7 +55,7 @@ For this branch:
 ```
 cd /d C:\AI\Projects\PZSorter
 git fetch
-git checkout feature/category-sort
+git checkout feature/item-filters
 git pull
 ```
 

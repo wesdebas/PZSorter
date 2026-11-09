@@ -11,9 +11,9 @@
 --   2. A container matches when it is here, in range, and its filter
 --      accepts the item. An empty filter accepts nothing.
 --   3. Most specific match wins. specificity 2 (this type ticked, category
---      not ticked) beats specificity 1 (the whole category). The checklist
---      in this step only ticks categories, so everything is 1 until step 4
---      fills in item ticks. The comparison is already here.
+--      not ticked) beats specificity 1 (the whole category, or a food
+--      sub-group). Priority and overflow only compare containers that
+--      tied on specificity.
 --   4. Higher priority wins a tie (1 to 9, default 5). If priority is also
 --      tied, the container closer to the crate wins. Distance is the same
 --      square the range check uses (Chebyshev), then the floor gap.

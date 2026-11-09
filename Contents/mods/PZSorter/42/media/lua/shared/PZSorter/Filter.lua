@@ -2,9 +2,8 @@
 --
 -- The save shape is the one in the design spec: a set of ticked categories,
 -- a set of ticked item types, and a set of unticked item types under ticked
--- categories. This step's window only ticks categories. The other two sets
--- are read and kept so the next step can tick single items without a new
--- save shape.
+-- categories. A step 3 save only has categories. Loading it still means
+-- "the whole category", and saving again writes the same three sets.
 --
 -- An empty filter accepts nothing. The panel says "No filter" for that row.
 -- A missing filter, and the {} stored when a container is first assigned,
@@ -84,11 +83,11 @@ function Filter.isEmpty(filter)
 end
 
 -- 0 does not accept the item.
--- 1 is a ticked category (the whole category, even if this type is also
---    ticked on its own).
--- 2 is this type ticked on its own, and its category is not ticked.
--- That last one is the "most specific" hook. Step 4's tree fills `items`
--- and `excluded`. The comparison already uses it.
+-- 1 is a ticked category, or a ticked food sub-group (the whole group,
+--    even if this type is also ticked on its own).
+-- 2 is this type ticked on its own, and neither its category nor its food
+--    sub-group is ticked. That is the specific match: Hammer in one box
+--    beats Tool in another.
 function Filter.specificity(filter, item)
     if type(item) ~= "table" then
         return 0
@@ -100,11 +99,19 @@ function Filter.specificity(filter, item)
         return 0
     end
     local categoryOn = category and normalized.categories[category] or false
+    local groupOn = false
+    local Tree = PZSorter.FilterTree
+    if Tree and Tree.foodCategory then
+        local groupId = Tree.foodCategory(item)
+        if groupId and normalized.categories[groupId] then
+            groupOn = true
+        end
+    end
     local itemOn = typeName and normalized.items[typeName] or false
-    if itemOn and not categoryOn then
+    if itemOn and not categoryOn and not groupOn then
         return 2
     end
-    if categoryOn then
+    if categoryOn or groupOn then
         return 1
     end
     return 0
@@ -153,8 +160,22 @@ function Filter.categoryNames(filter)
     return sortedNames(Filter.normalize(filter).categories, nil)
 end
 
--- Replace the ticked categories. Item ticks and exclusions stay, so editing
--- categories does not wipe the fields step 4 will use.
+-- Write all three sets. The item editor sends every set, including an
+-- empty one, so Clear All really clears. A missing argument is an empty
+-- set, not "leave the old one".
+function Filter.replace(parts)
+    if type(parts) ~= "table" then
+        parts = {}
+    end
+    return {
+        categories = readSet(parts.categories),
+        items = readSet(parts.items),
+        excluded = readSet(parts.excluded),
+    }
+end
+
+-- Replace the ticked categories. Item ticks and exclusions stay, so an
+-- old category-only packet does not wipe item ticks.
 function Filter.withCategories(filter, names)
     local current = Filter.normalize(filter)
     return {
@@ -188,5 +209,9 @@ function Filter.parseList(text)
     end
     return names
 end
+
+-- Loaded after the functions above so a food sub-group can be part of
+-- specificity. FilterTree does not require this file back.
+require "PZSorter/FilterTree"
 
 return Filter
