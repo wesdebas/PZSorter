@@ -148,6 +148,92 @@ describe("sort rules", function()
         assert.are.equal("no_match", leftoverReason(result, "beans"))
     end)
 
+    it("sends a hammer ticked on its own to that box and other tools to the category", function()
+        -- The inventory calls this category Tool. Box A ticks only the
+        -- hammer. Box B ticks the whole category and has the higher priority.
+        local boxA = container("a", "Box A", nil, 1, 8, {
+            filter = { items = { ["Base.hammer"] = true } },
+        })
+        local boxB = container("b", "Box B", "Tool", 9, 1)
+        local result = build({
+            item("hammer", "Tool"),
+            item("saw", "Tool"),
+        }, { boxB, boxA })
+        assert.are.equal("Box A", destinations(result).hammer)
+        assert.are.equal("Box B", destinations(result).saw)
+        assert.are.equal("Box A", result.moves[1].ranked[1].name)
+    end)
+
+    it("breaks an item-tick tie by priority, then overflows to the next item tick", function()
+        local low = container("low", "Box A", nil, 4, 1, {
+            filter = { items = { ["Base.hammer"] = true } },
+            maxItems = 1,
+            capacity = 100,
+        })
+        local high = container("high", "Box B", nil, 8, 4, {
+            filter = { items = { ["Base.hammer"] = true } },
+            maxItems = 1,
+            capacity = 100,
+        })
+        local result = build({
+            item("hammer", "Tool"),
+            item("spare", "Tool", { type = "Base.hammer" }),
+        }, { low, high })
+        assert.are.equal("Box B", destinations(result).hammer)
+        assert.are.equal("Box A", destinations(result).spare)
+        local packed = build({
+            item("hammer", "Tool"),
+            item("spare", "Tool", { type = "Base.hammer" }),
+            item("third", "Tool", { type = "Base.hammer" }),
+        }, { low, high })
+        assert.are.equal("full", leftoverReason(packed, "third"))
+        assert.are.equal("Box B", select(2, leftoverReason(packed, "third")))
+    end)
+
+    it("sorts perishable, frozen, and non-perishable food apart", function()
+        local fridge = container("fridge", "Fridge 1", nil, 5, 1, {
+            filter = { categories = { ["Food.Perishable"] = true } },
+        })
+        local shelf = container("shelf", "Shelf 1", nil, 5, 2, {
+            filter = { categories = { ["Food.NonPerishable"] = true } },
+        })
+        local freezer = container("freezer", "Freezer 1", nil, 5, 3, {
+            filter = { categories = { ["Food.Frozen"] = true } },
+        })
+        local result = build({
+            item("apple", "Food", { food = true, canRot = true, frozen = false }),
+            item("beans", "Food", { food = true, canRot = false, frozen = false }),
+            item("frozenapple", "Food", { food = true, canRot = true, frozen = true }),
+        }, { fridge, shelf, freezer })
+        assert.are.equal("Fridge 1", destinations(result).apple)
+        assert.are.equal("Shelf 1", destinations(result).beans)
+        assert.are.equal("Freezer 1", destinations(result).frozenapple)
+    end)
+
+    it("rejects canned food from a perishable-only fridge", function()
+        local fridge = container("fridge", "Fridge 1", nil, 5, 1, {
+            filter = { categories = { ["Food.Perishable"] = true } },
+        })
+        local result = build({
+            item("apple", "Food", { food = true, canRot = true }),
+            item("beans", "Food", { food = true, canRot = false }),
+        }, { fridge })
+        assert.are.equal("Fridge 1", destinations(result).apple)
+        assert.are.equal("no_match", leftoverReason(result, "beans"))
+    end)
+
+    it("keeps a category-only food filter accepting every food state", function()
+        local fridge = container("fridge", "Fridge 1", "Food", 5, 1)
+        local result = build({
+            item("apple", "Food", { food = true, canRot = true }),
+            item("beans", "Food", { food = true, canRot = false }),
+            item("frozenapple", "Food", { food = true, canRot = true, frozen = true }),
+        }, { fridge })
+        assert.are.equal("Fridge 1", destinations(result).apple)
+        assert.are.equal("Fridge 1", destinations(result).beans)
+        assert.are.equal("Fridge 1", destinations(result).frozenapple)
+    end)
+
     it("lets a type ticked on its own beat a higher-priority whole category", function()
         local specific = container("specific", "Box A", nil, 1, 8, {
             filter = { items = { ["Base.hammer"] = true } },

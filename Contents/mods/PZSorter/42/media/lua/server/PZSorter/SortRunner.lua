@@ -369,6 +369,15 @@ local function collectItems(src, player)
             end
             id = tostring(id)
             local full = fullTypeOf(javaItem)
+            local foodFacts = {}
+            if PZSorter.FilterTree and PZSorter.FilterTree.factsFromObject then
+                local readOk, read = pcall(PZSorter.FilterTree.factsFromObject, javaItem)
+                if readOk and type(read) == "table" then
+                    foodFacts = read
+                else
+                    print("PZSorter: sort food facts failed: " .. tostring(read))
+                end
+            end
             local fact = {
                 id = id,
                 category = displayCategoryOf(javaItem),
@@ -378,6 +387,9 @@ local function collectItems(src, player)
                 favorited = isFavorite(javaItem),
                 key = isKey(javaItem),
                 bag = isBag(javaItem),
+                food = foodFacts.food and true or false,
+                canRot = foodFacts.canRot and true or false,
+                frozen = foodFacts.frozen and true or false,
             }
             facts[#facts + 1] = fact
             javaById[id] = javaItem
@@ -394,8 +406,13 @@ local function collectItems(src, player)
             if fact.bag then
                 flags = flags .. " bag"
             end
+            local group = "none"
+            if fact.food and PZSorter.FilterTree and PZSorter.FilterTree.foodGroup then
+                group = PZSorter.FilterTree.foodGroup(fact) or "none"
+            end
             print("PZSorter: sort item " .. full
                 .. " category=" .. tostring(fact.category)
+                .. " group=" .. tostring(group)
                 .. " weight=" .. string.format("%.2f", weight)
                 .. flags)
         end
@@ -418,10 +435,11 @@ local function collectContainers(record, origin, player)
         local status = "unloaded"
         local weight = 0
         local capacity = 0
+        local row = nil
         if not square then
             status = "unloaded"
         else
-            local row = World.find(square, link.index)
+            row = World.find(square, link.index)
             if not row or not row.container then
                 status = "missing"
             else
@@ -430,18 +448,27 @@ local function collectContainers(record, origin, player)
                 capacity = capacityOf(row.container, player, weight, capacity)
             end
         end
+        local shown = World.containerLabel(link.name, row and row.container)
         local summary = Filter.summary(link.filter)
-        print("PZSorter: sort container " .. tostring(link.name)
+        if PZSorter.FilterTree and PZSorter.FilterTree.summary and PZSorter.FilterTree.cached then
+            local summaryOk, text = pcall(function()
+                return PZSorter.FilterTree.summary(link.filter, PZSorter.FilterTree.cached())
+            end)
+            if summaryOk and type(text) == "string" then
+                summary = text
+            end
+        end
+        print("PZSorter: sort container " .. tostring(shown)
             .. " status=" .. status
             .. " priority=" .. tostring(Links.clampPriority(link.priority))
             .. " filter=" .. summary
             .. " weight=" .. tostring(weight) .. "/" .. tostring(capacity))
         if status ~= "ok" then
-            print("PZSorter: sort skip " .. tostring(link.name) .. " status=" .. status)
+            print("PZSorter: sort skip " .. tostring(shown) .. " status=" .. status)
         end
         plain[#plain + 1] = {
             id = id,
-            name = link.name,
+            name = shown,
             x = link.x,
             y = link.y,
             z = link.z,
@@ -454,7 +481,7 @@ local function collectContainers(record, origin, player)
         }
         lookup[id] = {
             id = id,
-            name = link.name,
+            name = shown,
             x = link.x,
             y = link.y,
             z = link.z,
@@ -699,6 +726,6 @@ function Runner.cancel(player, sorterId)
     return summarize(session, player, true)
 end
 
-print("PZSorter: sort runner loaded (0.3.0)")
+print("PZSorter: sort runner loaded (0.4.0)")
 
 return Runner

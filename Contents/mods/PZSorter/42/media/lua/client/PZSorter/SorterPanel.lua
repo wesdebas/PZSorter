@@ -1,10 +1,12 @@
 -- The list of containers linked to one Sorter Crate.
 --
 -- Right-click the crate and choose Open Sorter. The header is the crate's
--- name. Each link is a row: the auto name, the categories it accepts (or
--- "No filter"), a priority from 1 to 9, a bar of how full it is, a dot,
+-- name. Each link is a row: the container's own name if it was renamed,
+-- otherwise the auto name, the filter ("Food: 12 items", "Hammer, Screws",
+-- or "No filter"), a priority from 1 to 9, a bar of how full it is, a dot,
 -- Edit filter, and Remove. Sort runs the timed action. Preview is still
--- disabled; it is a later step. Renaming a row is a later step too.
+-- disabled; it is a later step. Renaming a row from this panel is a later
+-- step. A name the container already has is shown now.
 --
 -- Green means the container is in range. Grey means it is outside the
 -- sandbox square, or its square is not loaded. Red means the square is
@@ -22,6 +24,7 @@ require "PZSorter/Filter"
 require "PZSorter/WorldContainers"
 require "PZSorter/Highlight"
 require "PZSorter/FilterChecklist"
+require "PZSorter/FilterEditor"
 require "PZSorter/SortAction"
 require "PZSorter/SummaryPopup"
 
@@ -126,6 +129,7 @@ function PZSorterPanel:signature()
             tostring(capacity),
             tostring(Links.clampPriority(links[i].priority)),
             filterLine(links[i]),
+            self:rowName(links[i]),
         }, ":")
     end
     local recordName = record and record.name or ""
@@ -158,18 +162,35 @@ local function fitText(text, maxChars)
     return text:sub(1, maxChars - 3) .. "..."
 end
 
--- The row's one-line filter. Category ids are shown with the inventory's
--- own labels when we have them. Nothing ticked is the "No filter" line.
+-- The row's one-line filter. A whole category is "Food: 12 items". A few
+-- ticked items are "Hammer, Screws". Nothing ticked is "No filter".
 function filterLine(link)
-    local labels = nil
-    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.labels then
-        labels = PZSorter.FilterChecklist.labels()
+    local summary = nil
+    if PZSorter.FilterTree and PZSorter.FilterTree.summary and PZSorter.FilterTree.cached then
+        local ok, text = pcall(function()
+            return PZSorter.FilterTree.summary(link and link.filter, PZSorter.FilterTree.cached())
+        end)
+        if ok and type(text) == "string" then
+            summary = text
+        end
     end
-    local summary = Filter.summary(link and link.filter, labels)
+    if not summary then
+        summary = Filter.summary(link and link.filter)
+    end
     if summary == Filter.NONE and getText then
         return getText("IGUI_PZSorter_NoFilter")
     end
     return summary
+end
+
+-- Custom name from the container when the player renamed it, otherwise
+-- the auto name stored on the link ("Sidetable 1"). Read on each refresh
+-- so a rename made while this panel is open shows up on the next tick.
+function PZSorterPanel:rowName(link)
+    local cell = getCell and getCell()
+    local square = cell and cell.getGridSquare and cell:getGridSquare(link.x, link.y, link.z)
+    local row = square and World.find(square, link.index)
+    return World.containerLabel(link and link.name, row and row.container)
 end
 
 local function statusText(status)
@@ -267,7 +288,7 @@ function PZSorterPanel:changePriority(button, delta)
     args.z = widget.link.z
     args.index = widget.link.index
     args.priority = nextPriority
-    print("PZSorter: priority " .. tostring(widget.link.name) .. " " .. tostring(current) .. " -> " .. tostring(nextPriority))
+    print("PZSorter: priority " .. tostring(widget.shownName or widget.link.name) .. " " .. tostring(current) .. " -> " .. tostring(nextPriority))
     request(window.player, "SetPriority", args)
     window._signature = nil
 end
@@ -286,11 +307,13 @@ function PZSorterPanel:onEditFilter(button)
     if not window or not widget or not widget.link then
         return
     end
-    print("PZSorter: edit filter " .. tostring(widget.link.name))
-    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.open then
+    print("PZSorter: edit filter " .. tostring(widget.shownName or widget.link.name))
+    if PZSorter.FilterEditor and PZSorter.FilterEditor.open then
+        PZSorter.FilterEditor.open(window.player, window.object, widget.link, window)
+    elseif PZSorter.FilterChecklist and PZSorter.FilterChecklist.open then
         PZSorter.FilterChecklist.open(window.player, window.object, widget.link, window)
     else
-        print("PZSorter: filter checklist is not loaded")
+        print("PZSorter: filter editor is not loaded")
     end
 end
 
@@ -315,7 +338,7 @@ function PZSorterPanel:onRemove(button)
         print("PZSorter: remove has no sorter")
         return
     end
-    print("PZSorter: remove clicked " .. tostring(widget.link.name))
+    print("PZSorter: remove clicked " .. tostring(widget.shownName or widget.link.name))
     local args = {
         sorterId = record.id,
         sorterX = square:getX(),
@@ -349,12 +372,17 @@ function PZSorterPanel:rebuildRows()
         local link = links[i]
         local status, weight, capacity, object = self:measure(link)
         local summary = filterLine(link)
-        print("PZSorter: row " .. tostring(link.name)
+        local shown = self:rowName(link)
+        local nameNote = tostring(shown)
+        if shown ~= link.name then
+            nameNote = tostring(shown) .. " auto=" .. tostring(link.name)
+        end
+        print("PZSorter: row " .. nameNote
             .. " status=" .. tostring(status)
             .. " weight=" .. tostring(weight) .. "/" .. tostring(capacity)
             .. " priority=" .. tostring(Links.clampPriority(link.priority))
             .. " filter=" .. summary)
-        local row = PZSorterLinkRow:new(8, top, width - 16, 70, self, link, status, weight, capacity, object, summary)
+        local row = PZSorterLinkRow:new(8, top, width - 16, 70, self, link, status, weight, capacity, object, summary, shown)
         row:initialise()
         self:addChild(row)
         self.rowWidgets[#self.rowWidgets + 1] = row
@@ -412,7 +440,9 @@ end
 
 function PZSorterPanel:close()
     print("PZSorter: sorter panel closed")
-    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.close then
+    if PZSorter.FilterEditor and PZSorter.FilterEditor.close then
+        PZSorter.FilterEditor.close()
+    elseif PZSorter.FilterChecklist and PZSorter.FilterChecklist.close then
         PZSorter.FilterChecklist.close()
     end
     if PZSorter.Highlight then
@@ -426,7 +456,7 @@ end
 
 PZSorterLinkRow = ISPanel:derive("PZSorterLinkRow")
 
-function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, weight, capacity, object, summary)
+function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, weight, capacity, object, summary, shownName)
     local panel = ISPanel:new(x, y, width, height)
     setmetatable(panel, self)
     self.__index = self
@@ -437,6 +467,7 @@ function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, wei
     panel.capacity = capacity or 0
     panel.liveObject = object
     panel.summary = summary or ""
+    panel.shownName = shownName or (link and link.name) or ""
     panel.backgroundColor = { r = 0.12, g = 0.11, b = 0.09, a = 0.92 }
     panel.borderColor = { r = 0.35, g = 0.3, b = 0.2, a = 1 }
     return panel
@@ -452,7 +483,7 @@ end
 function PZSorterLinkRow:initialise()
     ISPanel.initialise(self)
     local priority = Links.clampPriority(self.link.priority)
-    local name = ISLabel:new(8, 2, 16, self.link.name or "", 1, 1, 1, 1, UIFont.Small, true)
+    local name = ISLabel:new(8, 2, 16, fitText(self.shownName or self.link.name or "", 28), 1, 1, 1, 1, UIFont.Small, true)
     name:initialise()
     self:addChild(name)
     local red, green, blue = statusColor(self.status)
@@ -465,7 +496,7 @@ function PZSorterLinkRow:initialise()
     if noFilter then
         fr, fg, fb = 0.78, 0.46, 0.38
     end
-    local filterLabel = ISLabel:new(8, 22, 16, fitText(self.summary, 28), fr, fg, fb, 1, UIFont.Small, true)
+    local filterLabel = ISLabel:new(8, 22, 16, fitText(self.summary, 42), fr, fg, fb, 1, UIFont.Small, true)
     filterLabel:initialise()
     self:addChild(filterLabel)
 

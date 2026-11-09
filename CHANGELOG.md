@@ -5,6 +5,17 @@ All notable changes to PZSorter are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-11-09
+
+### Added
+
+- Edit filter is a tree. A category opens to show its items, including items added by other mods. Ticking the category takes all of them. Unticking one item leaves a partial mark, and that item stays in the sorter.
+- A search box narrows the tree as you type. Allow All and Clear All are still there. Copy from contents ticks the item types already in that container.
+- Food has three sub-groups. Perishable is food that can rot and is not frozen right now. Frozen is food that is frozen right now. Non-perishable is food that never rots, such as a sealed can. A perishable fridge does not take canned food.
+- A container that ticks one item beats a container that ticks the whole category. A hammer ticked on its own goes to that box. Other tools still follow priority, and a full box still overflows.
+- The row summary says how many items a category covers, such as "Food: 12 items", or names the items when only a few are ticked, such as "Hammer, Screws".
+- A renamed container keeps that name on the sorter row, in the filter window, in the sort summary, and in the log. The automatic name (Sidetable 1, Counter 1) is still used when the container has no name of its own. The rename is the container's own name, saved by the game, so it is still there after a reload.
+
 ## [0.3.0] - 2026-11-09
 
 ### Fixed

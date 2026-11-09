@@ -141,7 +141,7 @@ def main() -> None:
     for line in (
         "id=PZSorter_wd",
         "author=wesdebas",
-        "modversion=0.3.0",
+        "modversion=0.4.0",
         "versionMin=42.0",
         "pack=pzsorter_crate",
         "tiledef=pzsorter_crate 7311",

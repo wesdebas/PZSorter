@@ -322,6 +322,11 @@ function PZSorterFilterWindow:close()
 end
 
 function Checklist.open(player, object, link, panel)
+    -- Step 4 replaced this checklist with the item tree. Keep the old
+    -- entry point so a caller that still has it opens the new editor.
+    if PZSorter.FilterEditor and PZSorter.FilterEditor.open then
+        return PZSorter.FilterEditor.open(player, object, link, panel)
+    end
     if not link then
         print("PZSorter: filter editor has no row")
         return
@@ -351,11 +356,15 @@ function Checklist.open(player, object, link, panel)
 end
 
 function Checklist.close()
+    if PZSorter.FilterEditor and PZSorter.FilterEditor.close then
+        PZSorter.FilterEditor.close()
+        return
+    end
     if Checklist.current and Checklist.current.close then
         Checklist.current:close()
     end
 end
 
-print("PZSorter: filter checklist loaded (0.3.0)")
+print("PZSorter: filter checklist loaded (0.4.0)")
 
 return Checklist
