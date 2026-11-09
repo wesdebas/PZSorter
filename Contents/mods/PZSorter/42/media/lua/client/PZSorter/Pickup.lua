@@ -566,6 +566,6 @@ end
 install()
 installRotateHook()
 
-print("PZSorter: pickup loaded (0.2.0)")
+print("PZSorter: pickup loaded (0.3.0)")
 
 return Pickup

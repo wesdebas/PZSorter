@@ -1,6 +1,6 @@
 # Testing PZSorter
 
-This is the install and the checks for the assign-containers branch. Building and naming from step 1 are still here. This branch adds assigning containers and the sorter panel. Filters and Sort are not in yet.
+This is the install and the checks for the category-sort branch. Building, naming, and assigning from steps 1 and 2 are still here. This branch adds category filters, priority, and Sort.
 
 Target game: Project Zomboid **Build 42.21** (the current stable build). The mod is marked Build 42 only.
 
@@ -19,12 +19,12 @@ The `mklink /J` line makes a folder link, so the game sees the repo inside its W
 ```
 cd /d C:\AI\Projects\PZSorter
 git fetch
-git checkout feature/assign-containers
+git checkout feature/category-sort
 git pull
 pause
 ```
 
-Then start Project Zomboid. In **Mods**, enable **PZSorter**. Start a fresh **Sandbox** game. The PZSorter page is where Sorter range lives.
+Then start Project Zomboid. In **Mods**, enable **PZSorter**. Start a fresh **Sandbox** game. The PZSorter page is where Sorter range and Sort speed live.
 
 Debug mode is optional. Add `-debug` to the Steam launch options if you want to spawn planks, screws, a small metal sheet, a hammer, a saw, and Carpentry levels quickly. The first check (recipe greyed out without materials or Carpentry 1) needs **Build cheat turned off** in the debug Cheats panel. While Build cheat is on, the log says materials are not required, so that check cannot fail.
 
@@ -72,7 +72,7 @@ Build two Sorter Crates a few tiles apart and name them, for example "Home" and 
 - [ ] Put a container just inside 20 tiles of a sorter, and be sure another sorter is 21 or more tiles away (count the tiles; a diagonal counts the same as straight). The far sorter is greyed out. Its tooltip says "Too far from [Name]". One floor up or down still counts as in range. Two floors does not show as a choice.
 - [ ] On a fridge/freezer, Assign to Sorter has two entries, one for each part. Assigning one does not assign the other.
 - [ ] Two sorters do not share a container. After the move above, only Farm lists it.
-- [ ] Open Sorter. The header is the crate's name. The row shows the name (Fridge 1, Crate 1, and so on), a fill bar, and a green dot. Put something in the container: the bar moves. Sort and Preview are visible and cannot be clicked.
+- [ ] Open Sorter. The header is the crate's name. The row shows the name (Fridge 1, Crate 1, and so on), a fill bar, and a green dot. Put something in the container: the bar moves. Preview is visible and cannot be clicked. Sort is covered in the step 3 list.
 - [ ] While the panel is open, the linked container glows. Hover the row: only that container glows. Close the panel: the glow is gone.
 - [ ] Pick up or destroy the linked container. Its row turns red and says Missing. It stays until Remove.
 - [ ] Remove, or Unassign from the right-click menu. The row is gone. That container can be assigned again.
@@ -90,3 +90,19 @@ The crate has to be empty. Vanilla pickup is the same menu you use on a chair or
 - [ ] Place the item somewhere else. Press R before you click. After the game has loaded you should already have seen `rotate hook installed` and four `sprite props` lines whose IsMoveAble is `yes` and whose Noffset/Woffset/Soffset/Eoffset are numbers, not `-`. The first R logs `rotate faces found=4` listing `pzsorter_crate_01_3`, `_2`, `_1`, and `_0`. Each press cycles North, West, South, East. The placed crate matches the ghost. The log says `place facing=N sprite=pzsorter_crate_01_3` for north. The name box does not open. The log also says `place restored name=` with the same name and the same link count.
 - [ ] Open Sorter. The header is the old name. The rows are the same containers. One that is now outside the sandbox square has a grey Out of range dot, not Missing.
 - [ ] Save, quit to the desktop, and load. The name, the rows, and the dots are still right.
+
+## Step 3 checklist
+
+You need one Sorter Crate and three containers in range: a fridge, and two ordinary crates. Name the sorter whatever you like. The inventory's category for tools is **Tool**, not "Tools". Food is **Food**.
+
+Priority goes from 1 to 9. The up arrow raises it (9 is the strongest). A new row starts at 5.
+
+- [ ] Open Sorter. Set the fridge to Food, priority 5. Set Crate A to Tool, priority 5. Set Crate B to Tool, priority 8. Each row shows those words, not "No filter".
+- [ ] Drop mixed loot in the sorter (food and tools, plus something that is neither). Press Sort on the panel, or right-click the crate and choose Sort. Food goes to the fridge. Tools go to Crate B, the higher priority. The popup counts what moved and what stayed.
+- [ ] Fill Crate B until it is almost full. Sort again. Extra tools overflow to Crate A. The popup names Crate B as full when nothing else can take a tool.
+- [ ] Favorite one item in the sorter, and put a key in the sorter. Keep a weapon equipped in your hand. Sort. The favorite, the key, and the weapon stay. A full bag in the sorter moves as one item and is not emptied. The log shows `reason=favorited` and `reason=key`.
+- [ ] An item with no ticked category stays in the sorter. The popup says "no match".
+- [ ] Start a sort of a fairly full crate and walk away before the bar finishes. It stops. Items that already moved stay moved. The log says `sort cancelled, moved`.
+- [ ] Start a new game with Sort speed set to Instant. Press Sort. It finishes on the next tick instead of playing out the bar.
+- [ ] Clear All on one container. Its row says "No filter". Sort does not put anything in it.
+- [ ] `console.txt` has no PZSorter errors. Lines that say `sort begin`, `sort item`, `sort move` or `sort leave`, `sort summary`, and `summary popup` are expected. `filter categories=` should say `source=game`. `source=fallback` means the game's category list was not read; send the log.

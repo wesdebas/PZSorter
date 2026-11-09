@@ -1,5 +1,9 @@
 {
     "Sandbox_PZSorter": "PZSorter",
     "Sandbox_PZSorter_SorterRange": "Sorter range",
-    "Sandbox_PZSorter_SorterRange_tooltip": "How far a Sorter Crate reaches, in tiles. The area is a square: this many tiles in any direction, including diagonally, on the crate's floor and one floor above and one floor below."
+    "Sandbox_PZSorter_SorterRange_tooltip": "How far a Sorter Crate reaches, in tiles. The area is a square: this many tiles in any direction, including diagonally, on the crate's floor and one floor above and one floor below.",
+    "Sandbox_PZSorter_SortSpeed": "Sort speed",
+    "Sandbox_PZSorter_SortSpeed_tooltip": "Realistic plays a timed action. About 50 items takes about 10 seconds, and heavy loot takes longer. Instant sorts as soon as you press Sort.",
+    "Sandbox_PZSorter_SortSpeed_option1": "Realistic",
+    "Sandbox_PZSorter_SortSpeed_option2": "Instant"
 }

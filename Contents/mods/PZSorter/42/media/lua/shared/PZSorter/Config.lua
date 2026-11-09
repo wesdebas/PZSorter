@@ -8,8 +8,9 @@
 PZSorter = PZSorter or {}
 
 PZSorter.Config = {
-    -- Bumped only when the saved shape changes. Step 2 fills in the link
-    -- list that step 1 already reserved, so the schema stays 1.
+    -- Bumped only when the saved shape changes. Step 2 filled the link list
+    -- step 1 reserved. Step 3 stores priority and the filter sets on that
+    -- same link, so the schema stays 1.
     SCHEMA = 1,
     -- Weight capacity of the crate. Comes from the tile property too.
     CAPACITY = 50,

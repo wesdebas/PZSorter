@@ -1,9 +1,10 @@
 -- The list of containers linked to one Sorter Crate.
 --
 -- Right-click the crate and choose Open Sorter. The header is the crate's
--- name. Each link is a row: the auto name, a bar of how full it is, a dot,
--- and Remove. Sort and Preview are on the window and do nothing yet.
--- Filters, priority, and renaming the row are a later step.
+-- name. Each link is a row: the auto name, the categories it accepts (or
+-- "No filter"), a priority from 1 to 9, a bar of how full it is, a dot,
+-- Edit filter, and Remove. Sort runs the timed action. Preview is still
+-- disabled; it is a later step. Renaming a row is a later step too.
 --
 -- Green means the container is in range. Grey means it is outside the
 -- sandbox square, or its square is not loaded. Red means the square is
@@ -17,8 +18,12 @@ require "ISUI/ISLabel"
 require "PZSorter/Config"
 require "PZSorter/Range"
 require "PZSorter/Links"
+require "PZSorter/Filter"
 require "PZSorter/WorldContainers"
 require "PZSorter/Highlight"
+require "PZSorter/FilterChecklist"
+require "PZSorter/SortAction"
+require "PZSorter/SummaryPopup"
 
 PZSorter = PZSorter or {}
 PZSorter.SorterPanel = PZSorter.SorterPanel or {}
@@ -27,6 +32,7 @@ local PanelApi = PZSorter.SorterPanel
 local Config = PZSorter.Config
 local Range = PZSorter.Range
 local Links = PZSorter.Links
+local Filter = PZSorter.Filter
 local World = PZSorter.WorldContainers
 
 PZSorterPanel = ISCollapsableWindow:derive("PZSorterPanel")
@@ -100,16 +106,70 @@ function PZSorterPanel:measure(link)
     return status, weight, capacity, row.object
 end
 
+-- Assigned below. signature() runs later, so the local has to exist first.
+local filterLine
+
 function PZSorterPanel:signature()
     local record = self:record()
     local links = Links.each(record and record.links)
     local parts = {}
     for i = 1, #links do
-        local status = self:measure(links[i])
-        parts[#parts + 1] = tostring(links[i].x) .. ":" .. tostring(links[i].y) .. ":" .. tostring(links[i].z) .. ":" .. tostring(links[i].index) .. ":" .. tostring(links[i].name) .. ":" .. status
+        local status, weight, capacity = self:measure(links[i])
+        parts[#parts + 1] = table.concat({
+            tostring(links[i].x),
+            tostring(links[i].y),
+            tostring(links[i].z),
+            tostring(links[i].index),
+            tostring(links[i].name),
+            tostring(status),
+            tostring(weight),
+            tostring(capacity),
+            tostring(Links.clampPriority(links[i].priority)),
+            filterLine(links[i]),
+        }, ":")
     end
     local recordName = record and record.name or ""
     return recordName .. "|" .. table.concat(parts, "|")
+end
+
+local function request(player, command, args)
+    if PZSorter.Commands and PZSorter.Commands.request then
+        return PZSorter.Commands.request(player, command, args)
+    end
+    if sendClientCommand then
+        print("PZSorter: command sent " .. tostring(command))
+        sendClientCommand(player, Config.COMMAND_MODULE, command, args)
+        return nil
+    end
+    print("PZSorter: no way to run " .. tostring(command))
+    return nil
+end
+
+local function fitText(text, maxChars)
+    if type(text) ~= "string" then
+        return ""
+    end
+    if #text <= maxChars then
+        return text
+    end
+    if maxChars < 4 then
+        return text:sub(1, maxChars)
+    end
+    return text:sub(1, maxChars - 3) .. "..."
+end
+
+-- The row's one-line filter. Category ids are shown with the inventory's
+-- own labels when we have them. Nothing ticked is the "No filter" line.
+function filterLine(link)
+    local labels = nil
+    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.labels then
+        labels = PZSorter.FilterChecklist.labels()
+    end
+    local summary = Filter.summary(link and link.filter, labels)
+    if summary == Filter.NONE and getText then
+        return getText("IGUI_PZSorter_NoFilter")
+    end
+    return summary
 end
 
 local function statusText(status)
@@ -172,6 +232,77 @@ function PZSorterPanel:clearCustomChildren()
     end
 end
 
+function PZSorterPanel:sorterArgs()
+    local record = self:record()
+    local square = self.object and self.object.getSquare and self.object:getSquare()
+    if not record or not square then
+        return nil
+    end
+    return {
+        sorterId = record.id,
+        sorterX = square:getX(),
+        sorterY = square:getY(),
+        sorterZ = square:getZ(),
+    }
+end
+
+function PZSorterPanel:changePriority(button, delta)
+    local widget = button and button.rowWidget
+    local window = widget and widget.parentPanel
+    if not window or not widget or not widget.link then
+        return
+    end
+    local current = Links.clampPriority(widget.link.priority)
+    local nextPriority = Links.clampPriority(current + delta)
+    if nextPriority == current then
+        return
+    end
+    local args = window:sorterArgs()
+    if not args then
+        print("PZSorter: priority has no sorter")
+        return
+    end
+    args.x = widget.link.x
+    args.y = widget.link.y
+    args.z = widget.link.z
+    args.index = widget.link.index
+    args.priority = nextPriority
+    print("PZSorter: priority " .. tostring(widget.link.name) .. " " .. tostring(current) .. " -> " .. tostring(nextPriority))
+    request(window.player, "SetPriority", args)
+    window._signature = nil
+end
+
+function PZSorterPanel:onPriorityUp(button)
+    self:changePriority(button, 1)
+end
+
+function PZSorterPanel:onPriorityDown(button)
+    self:changePriority(button, -1)
+end
+
+function PZSorterPanel:onEditFilter(button)
+    local widget = button and button.rowWidget
+    local window = widget and widget.parentPanel
+    if not window or not widget or not widget.link then
+        return
+    end
+    print("PZSorter: edit filter " .. tostring(widget.link.name))
+    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.open then
+        PZSorter.FilterChecklist.open(window.player, window.object, widget.link, window)
+    else
+        print("PZSorter: filter checklist is not loaded")
+    end
+end
+
+function PZSorterPanel:onSort()
+    print("PZSorter: Sort clicked")
+    if PZSorter.SortAction and PZSorter.SortAction.start then
+        PZSorter.SortAction.start(self.player, self.object)
+    else
+        print("PZSorter: sort action is not loaded")
+    end
+end
+
 function PZSorterPanel:onRemove(button)
     local widget = button and button.rowWidget
     local window = widget and widget.parentPanel
@@ -195,14 +326,7 @@ function PZSorterPanel:onRemove(button)
         z = widget.link.z,
         index = widget.link.index,
     }
-    if PZSorter.Commands and PZSorter.Commands.request then
-        PZSorter.Commands.request(window.player, "Unassign", args)
-    elseif sendClientCommand then
-        print("PZSorter: command sent Unassign")
-        sendClientCommand(window.player, Config.COMMAND_MODULE, "Unassign", args)
-    else
-        print("PZSorter: no way to run Unassign")
-    end
+    request(window.player, "Unassign", args)
     window._signature = nil
 end
 
@@ -224,19 +348,24 @@ function PZSorterPanel:rebuildRows()
     for i = 1, #links do
         local link = links[i]
         local status, weight, capacity, object = self:measure(link)
-        print("PZSorter: row " .. tostring(link.name) .. " status=" .. tostring(status) .. " weight=" .. tostring(weight) .. "/" .. tostring(capacity))
-        local row = PZSorterLinkRow:new(8, top, width - 16, 44, self, link, status, weight, capacity, object)
+        local summary = filterLine(link)
+        print("PZSorter: row " .. tostring(link.name)
+            .. " status=" .. tostring(status)
+            .. " weight=" .. tostring(weight) .. "/" .. tostring(capacity)
+            .. " priority=" .. tostring(Links.clampPriority(link.priority))
+            .. " filter=" .. summary)
+        local row = PZSorterLinkRow:new(8, top, width - 16, 70, self, link, status, weight, capacity, object, summary)
         row:initialise()
         self:addChild(row)
         self.rowWidgets[#self.rowWidgets + 1] = row
-        top = top + 48
+        top = top + 74
     end
-    local sort = ISButton:new(8, top, 90, 22, getText("IGUI_PZSorter_Sort"), self, function() end)
+    local sort = ISButton:new(8, top, 90, 22, getText("IGUI_PZSorter_Sort"), self, PZSorterPanel.onSort)
     sort:initialise()
     sort:instantiate()
-    sort.enable = false
+    sort.enable = true
     if sort.setEnable then
-        sort:setEnable(false)
+        sort:setEnable(true)
     end
     self:addChild(sort)
     self.sortButton = sort
@@ -283,6 +412,9 @@ end
 
 function PZSorterPanel:close()
     print("PZSorter: sorter panel closed")
+    if PZSorter.FilterChecklist and PZSorter.FilterChecklist.close then
+        PZSorter.FilterChecklist.close()
+    end
     if PZSorter.Highlight then
         PZSorter.Highlight.clear()
     end
@@ -294,7 +426,7 @@ end
 
 PZSorterLinkRow = ISPanel:derive("PZSorterLinkRow")
 
-function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, weight, capacity, object)
+function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, weight, capacity, object, summary)
     local panel = ISPanel:new(x, y, width, height)
     setmetatable(panel, self)
     self.__index = self
@@ -304,21 +436,64 @@ function PZSorterLinkRow:new(x, y, width, height, parentPanel, link, status, wei
     panel.weight = weight or 0
     panel.capacity = capacity or 0
     panel.liveObject = object
+    panel.summary = summary or ""
     panel.backgroundColor = { r = 0.12, g = 0.11, b = 0.09, a = 0.92 }
     panel.borderColor = { r = 0.35, g = 0.3, b = 0.2, a = 1 }
     return panel
 end
 
+local function setButtonEnabled(button, enabled)
+    button.enable = enabled and true or false
+    if button.setEnable then
+        button:setEnable(button.enable)
+    end
+end
+
 function PZSorterLinkRow:initialise()
     ISPanel.initialise(self)
-    local name = ISLabel:new(8, 4, 16, self.link.name or "", 1, 1, 1, 1, UIFont.Small, true)
+    local priority = Links.clampPriority(self.link.priority)
+    local name = ISLabel:new(8, 2, 16, self.link.name or "", 1, 1, 1, 1, UIFont.Small, true)
     name:initialise()
     self:addChild(name)
     local red, green, blue = statusColor(self.status)
-    local statusLabel = ISLabel:new(150, 4, 16, statusText(self.status), red, green, blue, 1, UIFont.Small, true)
+    local statusLabel = ISLabel:new(self.width - 160, 2, 16, statusText(self.status), red, green, blue, 1, UIFont.Small, true)
     statusLabel:initialise()
     self:addChild(statusLabel)
-    local remove = ISButton:new(self.width - 78, 10, 70, 22, getText("IGUI_PZSorter_Remove"), self.parentPanel, PZSorterPanel.onRemove)
+
+    local noFilter = getText and self.summary == getText("IGUI_PZSorter_NoFilter")
+    local fr, fg, fb = 0.86, 0.82, 0.66
+    if noFilter then
+        fr, fg, fb = 0.78, 0.46, 0.38
+    end
+    local filterLabel = ISLabel:new(8, 22, 16, fitText(self.summary, 28), fr, fg, fb, 1, UIFont.Small, true)
+    filterLabel:initialise()
+    self:addChild(filterLabel)
+
+    local priorityLabel = ISLabel:new(self.width - 156, 22, 16, getText("IGUI_PZSorter_Priority"), 0.8, 0.8, 0.8, 1, UIFont.Small, true)
+    priorityLabel:initialise()
+    self:addChild(priorityLabel)
+    local up = ISButton:new(self.width - 78, 20, 22, 20, getText("IGUI_PZSorter_PriorityUp"), self.parentPanel, PZSorterPanel.onPriorityUp)
+    up:initialise()
+    up:instantiate()
+    up.rowWidget = self
+    setButtonEnabled(up, priority < 9)
+    self:addChild(up)
+    local number = ISLabel:new(self.width - 52, 22, 16, tostring(priority), 1, 1, 1, 1, UIFont.Small, true)
+    number:initialise()
+    self:addChild(number)
+    local down = ISButton:new(self.width - 30, 20, 22, 20, getText("IGUI_PZSorter_PriorityDown"), self.parentPanel, PZSorterPanel.onPriorityDown)
+    down:initialise()
+    down:instantiate()
+    down.rowWidget = self
+    setButtonEnabled(down, priority > 1)
+    self:addChild(down)
+
+    local edit = ISButton:new(self.width - 200, 46, 108, 20, getText("IGUI_PZSorter_EditFilter"), self.parentPanel, PZSorterPanel.onEditFilter)
+    edit:initialise()
+    edit:instantiate()
+    edit.rowWidget = self
+    self:addChild(edit)
+    local remove = ISButton:new(self.width - 86, 46, 78, 20, getText("IGUI_PZSorter_Remove"), self.parentPanel, PZSorterPanel.onRemove)
     remove:initialise()
     remove:instantiate()
     remove.rowWidget = self
@@ -332,10 +507,10 @@ function PZSorterLinkRow:render()
     if self.capacity > 0 then
         ratio = math.min(1, math.max(0, self.weight / self.capacity))
     end
-    self:drawRect(8, 24, 120, 8, 0.85, 0.18, 0.16, 0.13)
-    self:drawRect(8, 24, 120 * ratio, 8, 0.95, 0.72, 0.52, 0.16)
+    self:drawRect(8, 50, 160, 8, 0.85, 0.18, 0.16, 0.13)
+    self:drawRect(8, 50, 160 * ratio, 8, 0.95, 0.72, 0.52, 0.16)
     local red, green, blue = statusColor(self.status)
-    self:drawRect(134, 23, 10, 10, 1, red, green, blue)
+    self:drawRect(176, 48, 10, 10, 1, red, green, blue)
 end
 
 function PZSorterLinkRow:onMouseMove(dx, dy)
@@ -366,7 +541,7 @@ function PanelApi.open(player, object)
     if PanelApi.current then
         PanelApi.current:close()
     end
-    local width = 440
+    local width = 540
     local height = 160
     local x = (getCore():getScreenWidth() - width) / 2
     local y = (getCore():getScreenHeight() - height) / 2

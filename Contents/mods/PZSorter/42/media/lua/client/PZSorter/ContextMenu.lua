@@ -1,4 +1,4 @@
--- "Assign to Sorter" on a container, and "Open Sorter" on the crate.
+-- "Assign to Sorter" on a container, and "Open Sorter" / "Sort" on the crate.
 --
 -- The submenu lists sorters we know about that are near this tile. One
 -- that is inside the sandbox square can be chosen. One that is near but
@@ -218,6 +218,15 @@ local function openPanel(player, object)
     end
 end
 
+local function onSort(player, object)
+    print("PZSorter: Sort clicked from the menu")
+    if PZSorter.SortAction and PZSorter.SortAction.start then
+        PZSorter.SortAction.start(player, object)
+    else
+        print("PZSorter: sort action is not loaded")
+    end
+end
+
 local function onFillMenu(playerNum, context, worldobjects, test)
     local ok, err = pcall(function()
         if not context or not context.addOption then
@@ -227,6 +236,7 @@ local function onFillMenu(playerNum, context, worldobjects, test)
         local sorterObject = findSorterObject(worldobjects)
         if sorterObject then
             context:addOption(getText("IGUI_PZSorter_Open"), player, openPanel, sorterObject)
+            context:addOption(getText("IGUI_PZSorter_Sort"), player, onSort, sorterObject)
         end
         local square = squareOf(worldobjects)
         if not square then
@@ -273,6 +283,6 @@ end
 
 Events.OnFillWorldObjectContextMenu.Add(onFillMenu)
 
-print("PZSorter: assign menu loaded (0.2.0)")
+print("PZSorter: assign menu loaded (0.3.0)")
 
 return Menu

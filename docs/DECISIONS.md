@@ -18,10 +18,15 @@ When this file and the project plan disagree, this file wins. The design spec st
 - A fridge/freezer combo is two rows, one for the fridge and one for the freezer. The row name comes from the container type plus a number, like "Fridge 1".
 - Picking up the crate uses the moveable item `PZSorter.SorterCrate`. The item keeps the name, id, and links. Placing it does not open the name box again. It has to be empty, the same as a vanilla container.
 
+## Already in this build (step 3)
+
+- Category filters use the game's inventory display categories. The saved filter also has item ticks and exclusions, but this step does not edit those.
+- A realistic sort of about 50 items takes about 10 seconds, plus a little when the loot is heavy. Instant finishes on the next tick. Moodles can stretch the realistic time, the same way they stretch other timed actions.
+- The sort moves items on the server only. A multiplayer client asks for each step and does not move the item itself.
+
 ## For later steps (do not build these yet)
 
 - **Frozen** means the food is frozen right now. It does not mean "this kind of food can be frozen".
 - **Perishable** means anything that can rot.
 - Non-perishable was not given its own sentence. Until it is, treat it as food that cannot rot and is not frozen right now, so the three food groups do not overlap.
-- A realistic sort of 50 items takes about 10 seconds.
 - Workshop visibility is Public. wesdebas publishes the Workshop item himself.

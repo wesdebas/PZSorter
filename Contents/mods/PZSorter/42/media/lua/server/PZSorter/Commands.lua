@@ -12,6 +12,8 @@ require "PZSorter/WorldContainers"
 require "PZSorter/Access"
 require "PZSorter/SorterData"
 require "PZSorter/CarryFind"
+require "PZSorter/Filter"
+require "PZSorter/SortRunner"
 
 PZSorter = PZSorter or {}
 PZSorter.Commands = PZSorter.Commands or {}
@@ -181,6 +183,11 @@ end
 
 local function reject(reason)
     print("PZSorter: link refused, " .. reason)
+    return false
+end
+
+local function refuse(kind, reason)
+    print("PZSorter: " .. kind .. " refused, " .. reason)
     return false
 end
 
@@ -396,10 +403,124 @@ function Commands.unassign(player, args)
     return true
 end
 
+function Commands.setPriority(player, args)
+    print("PZSorter: priority change entered")
+    local spot = spotOf(args)
+    if not spot then
+        return refuse("priority", "bad arguments")
+    end
+    if not near(player, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ)) then
+        return refuse("priority", "player is not next to the sorter")
+    end
+    local sorterObject, record = findSorter(args.sorterId, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ))
+    if not record or not sorterObject then
+        return refuse("priority", "sorter was not found")
+    end
+    if not allowedSquares(player, { sorterObject:getSquare() }) then
+        return false
+    end
+    local link = Links.find(record.links, spot.x, spot.y, spot.z, spot.index)
+    if not link then
+        return refuse("priority", "container is not linked")
+    end
+    local previous = link.priority
+    link.priority = Links.clampPriority(args.priority)
+    transmit(sorterObject)
+    print("PZSorter: priority " .. tostring(link.name) .. " " .. tostring(previous) .. " -> " .. tostring(link.priority))
+    return true
+end
+
+function Commands.setFilter(player, args)
+    print("PZSorter: filter change entered")
+    local spot = spotOf(args)
+    if not spot then
+        return refuse("filter", "bad arguments")
+    end
+    if not near(player, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ)) then
+        return refuse("filter", "player is not next to the sorter")
+    end
+    local sorterObject, record = findSorter(args.sorterId, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ))
+    if not record or not sorterObject then
+        return refuse("filter", "sorter was not found")
+    end
+    if not allowedSquares(player, { sorterObject:getSquare() }) then
+        return false
+    end
+    local link = Links.find(record.links, spot.x, spot.y, spot.z, spot.index)
+    if not link then
+        return refuse("filter", "container is not linked")
+    end
+    local names = nil
+    if type(args.categoriesText) == "string" then
+        names = PZSorter.Filter.parseList(args.categoriesText)
+    elseif type(args.categories) == "table" then
+        names = args.categories
+    else
+        return refuse("filter", "no category list")
+    end
+    link.filter = PZSorter.Filter.withCategories(link.filter, names)
+    transmit(sorterObject)
+    print("PZSorter: filter " .. tostring(link.name) .. " " .. PZSorter.Filter.summary(link.filter))
+    return true
+end
+
+function Commands.sortBegin(player, args)
+    print("PZSorter: sort begin entered")
+    if type(args) ~= "table" then
+        return refuse("sort", "bad arguments")
+    end
+    if not near(player, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ)) then
+        return refuse("sort", "player is not next to the sorter")
+    end
+    local sorterObject, record = findSorter(args.sorterId, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ))
+    if not record or not sorterObject then
+        return refuse("sort", "sorter was not found")
+    end
+    if not allowedSquares(player, { sorterObject:getSquare() }) then
+        return false
+    end
+    return PZSorter.SortRunner.begin(player, sorterObject, record)
+end
+
+function Commands.sortStep(player, args)
+    if type(args) ~= "table" then
+        return refuse("sort", "bad arguments")
+    end
+    -- Walking away stops the timed action. A step that arrives after that
+    -- must not keep moving items. Cancel drops whatever is left uncommitted.
+    if not near(player, tonumber(args.sorterX), tonumber(args.sorterY), tonumber(args.sorterZ)) then
+        -- The timed action sends Cancel on its own. Cancelling here too
+        -- would pop the summary twice.
+        print("PZSorter: sort step refused, player moved away")
+        return nil
+    end
+    return PZSorter.SortRunner.step(player, args.sorterId)
+end
+
+function Commands.sortFinish(player, args)
+    if type(args) ~= "table" then
+        return refuse("sort", "bad arguments")
+    end
+    return PZSorter.SortRunner.finish(player, args.sorterId)
+end
+
+function Commands.sortCancel(player, args)
+    if type(args) ~= "table" then
+        return refuse("sort", "bad arguments")
+    end
+    return PZSorter.SortRunner.cancel(player, args.sorterId)
+end
+
 local HANDLERS = {
     Assign = Commands.assign,
     Move = Commands.move,
     Unassign = Commands.unassign,
+    SetPriority = Commands.setPriority,
+    SetFilter = Commands.setFilter,
+    SortBegin = Commands.sortBegin,
+    SortStep = Commands.sortStep,
+    SortFinish = Commands.sortFinish,
+    SortCancel = Commands.sortCancel,
 }
 
 -- The menu calls this. Single player runs the handler in this state.
@@ -410,8 +531,7 @@ function Commands.request(player, command, args)
     local handler = HANDLERS[command]
     if Config.onAuthority() and handler then
         print("PZSorter: running " .. tostring(command) .. " directly")
-        handler(player, args)
-        return
+        return handler(player, args)
     end
     if sendClientCommand then
         print("PZSorter: command sent " .. tostring(command))
@@ -439,6 +559,6 @@ end
 
 Events.OnClientCommand.Add(onClientCommand)
 
-print("PZSorter: container commands loaded (0.2.0)")
+print("PZSorter: container commands loaded (0.3.0)")
 
 return Commands
