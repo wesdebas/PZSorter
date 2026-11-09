@@ -18,6 +18,8 @@ require "PZSorter/SortPlan"
 require "PZSorter/Range"
 require "PZSorter/Links"
 require "PZSorter/WorldContainers"
+require "PZSorter/Keys"
+require "PZSorter/MoveGuard"
 
 PZSorter = PZSorter or {}
 PZSorter.SortRunner = PZSorter.SortRunner or {}
@@ -35,6 +37,8 @@ local Plan = PZSorter.SortPlan
 local Range = PZSorter.Range
 local Links = PZSorter.Links
 local World = PZSorter.WorldContainers
+local Keys = PZSorter.Keys
+local Guard = PZSorter.MoveGuard
 
 -- One sort at a time per crate. The timed action's steps share this table.
 -- Replacing it on a new SortBegin drops whatever the previous one had not
@@ -119,51 +123,9 @@ local function sorterPosition(object, record)
     }
 end
 
-local function shortType(full)
-    if type(full) ~= "string" then
-        return ""
-    end
-    return full:match("([^%.]+)$") or full
-end
-
--- Keys stay in the crate. A key ring stays too, because moving the ring
--- would carry the keys with it. The check is the class, the category, and
--- a few type names the game actually uses. A name that merely contains
--- the letters "key" is not a key.
+-- Keys stay in the crate. Keys.isKey never calls hasTag with a string.
 local function isKey(item)
-    if isA(item, "Key") or isA(item, "KeyRing") then
-        return true
-    end
-    local category = asText(callMethod(item, "getCategory"))
-    if category == "Key" then
-        return true
-    end
-    local display = asText(callMethod(item, "getDisplayCategory"))
-    if display == "Key" then
-        return true
-    end
-    local short = shortType(asText(callMethod(item, "getFullType")) or "")
-    if short == "Key" or short == "KeyRing" then
-        return true
-    end
-    if short:match("^Key%d") or short:match("^CarKey") or short:match("KeyRing$") then
-        return true
-    end
-    if item and type(item.hasTag) == "function" then
-        local ok, tagged = pcall(function()
-            if ItemTag and ItemTag.KEY and item:hasTag(ItemTag.KEY) then
-                return true
-            end
-            if item:hasTag("Key") or item:hasTag("key") then
-                return true
-            end
-            return false
-        end)
-        if ok and tagged then
-            return true
-        end
-    end
-    return false
+    return Keys.isKey(item)
 end
 
 local function isFavorite(item)
@@ -280,7 +242,25 @@ end
 -- Local remove-then-add, and only then the multiplayer packet. Doing the
 -- add on the client as well is what duplicates items, so this function is
 -- not called from the client file.
-local function transfer(src, dest, item)
+-- Room and "not the floor" are checked again here, after the plan, and
+-- before the item is taken out of the sorter. A failed add is put back
+-- in the sorter. Nothing in this function drops an item on the ground.
+local function transfer(src, dest, item, player)
+    local kind = asText(callMethod(dest, "getType"))
+    local facts = {
+        type = kind,
+        floor = kind == "floor",
+        sameAsSource = dest ~= nil and dest == src,
+        addable = dest ~= nil and type(dest.AddItem) == "function",
+        room = false,
+    }
+    if not facts.floor and facts.addable and not facts.sameAsSource then
+        facts.room = roomFor(dest, item, player)
+    end
+    local allowed, reason = Guard.allow(facts)
+    if not allowed then
+        return false, reason
+    end
     if not containsItem(src, item) then
         return false, "gone"
     end
@@ -311,12 +291,15 @@ local function transfer(src, dest, item)
         return false, "no add"
     end
     local added, addErr = pcall(dest.AddItem, dest, item)
-    if not added then
+    if Guard.afterRemove(added) == "restore" then
         print("PZSorter: sort add failed: " .. tostring(addErr))
         if type(src.AddItem) == "function" then
             pcall(src.AddItem, src, item)
         end
-        return false, "add failed"
+        if not containsItem(src, item) then
+            print("PZSorter: sort restore failed, item was not put on the floor " .. tostring(fullTypeOf(item)))
+        end
+        return false, "full"
     end
     if type(item.setContainer) == "function" then
         local current = callMethod(item, "getContainer")
@@ -548,6 +531,7 @@ local function commit(session, player)
     local ranked = step.ranked or {}
     local fullName = step.containerName
     local sawFull = false
+    local sawFloor = false
     for i = 1, #ranked do
         local rankedId = tostring(ranked[i].id)
         local entry = session.lookup[rankedId]
@@ -564,16 +548,20 @@ local function commit(session, player)
                     fullName = entry.name
                 end
             else
-                local moved, why = transfer(session.src, dest, item)
+                local moved, why = transfer(session.src, dest, item, player)
                 if moved then
                     session.moves[#session.moves + 1] = { containerName = entry.name }
                     print("PZSorter: sort move " .. typeName .. " -> " .. tostring(entry.name))
                     return true
                 end
                 print("PZSorter: sort move failed " .. typeName .. " -> " .. tostring(entry.name) .. " (" .. tostring(why) .. ")")
-                sawFull = true
-                if not fullName then
-                    fullName = entry.name
+                if why == "floor" then
+                    sawFloor = true
+                else
+                    sawFull = true
+                    if not fullName then
+                        fullName = entry.name
+                    end
                 end
             end
         end
@@ -581,6 +569,9 @@ local function commit(session, player)
     if sawFull then
         session.leftovers[#session.leftovers + 1] = { reason = "full", containerName = fullName }
         print("PZSorter: sort leave " .. typeName .. " reason=full container=" .. tostring(fullName))
+    elseif sawFloor then
+        session.leftovers[#session.leftovers + 1] = { reason = "floor" }
+        print("PZSorter: sort leave " .. typeName .. " reason=floor")
     else
         session.leftovers[#session.leftovers + 1] = { reason = "no_match" }
         print("PZSorter: sort leave " .. typeName .. " reason=no_match")

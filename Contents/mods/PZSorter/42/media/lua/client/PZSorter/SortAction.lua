@@ -12,7 +12,6 @@
 
 require "TimedActions/ISBaseTimedAction"
 require "TimedActions/ISTimedActionQueue"
-require "TimedActions/ISWalkToTimedAction"
 require "PZSorter/Config"
 require "PZSorter/SortPlan"
 require "PZSorter/Range"
@@ -319,6 +318,9 @@ function SortAction.start(player, object)
     end
     local action = PZSorterSortAction:new(player, object)
     SortAction._busy = true
+    -- The walk class is not loaded yet when this file loads, and require
+    -- prints a warning for that. By the time Sort is pressed, the game has
+    -- defined the global, and this uses it.
     if ISWalkToTimedAction and AdjacentFreeTileFinder and AdjacentFreeTileFinder.Find then
         local ok, adjacent = pcall(AdjacentFreeTileFinder.Find, square, player)
         if ok and adjacent then

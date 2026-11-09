@@ -7,6 +7,11 @@ and this project uses [semantic versions](https://semver.org/spec/v2.0.0.html).
 
 ## [0.3.0] - 2026-11-09
 
+### Fixed
+
+- Sorting no longer calls hasTag with a text name. On Build 42 that call throws for every item, and the error still shows up in the log when it is caught. Keys are recognised by their class, category, type, and the game's ItemTag values.
+- A sort move is checked again immediately before the item leaves the crate. It only goes into a real container that still has room. The ground is refused, and a failed add is put back in the sorter.
+
 ### Added
 
 - Each assigned container has a priority from 1 to 9, starting at 5, and a category filter. The row lists the categories, or "No filter" when nothing is ticked. Edit filter is a checklist of the inventory's own categories, with Allow All and Clear All.

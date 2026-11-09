@@ -110,6 +110,11 @@ local function usable(container)
     if container.inRange == false then
         return false
     end
+    -- The ground is a container whose type is "floor". It is not a place
+    -- we sort into. The item stays in the crate instead.
+    if container.floor or container.type == "floor" then
+        return false
+    end
     return true
 end
 
